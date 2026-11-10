@@ -1,0 +1,14 @@
+// This is a generated file; do not edit or check into version control.
+FLUTTER_ROOT=/Users/dltmdwls15/Desktop/flutter
+FLUTTER_APPLICATION_PATH=/Users/dltmdwls15/Desktop/projects/luckieverse_tab_flutter
+FLUTTER_FRAMEWORK_SWIFT_PACKAGE_PATH=/Users/dltmdwls15/Desktop/projects/luckieverse_tab_flutter/macos/Flutter/ephemeral/Packages/.packages/FlutterFramework
+COCOAPODS_PARALLEL_CODE_SIGN=true
+FLUTTER_TARGET=/Users/dltmdwls15/Desktop/projects/luckieverse_tab_flutter/lib/main.dart
+FLUTTER_BUILD_DIR=build
+FLUTTER_BUILD_NAME=1.0.0
+FLUTTER_BUILD_NUMBER=1
+DART_DEFINES=RkxVVFRFUl9CVUlMRF9OQU1FPTEuMC4w,RkxVVFRFUl9CVUlMRF9OVU1CRVI9MQ==,RkxVVFRFUl9WRVJTSU9OPTMuNTAuMC0xLjAucHJlLTUwNQ==,RkxVVFRFUl9DSEFOTkVMPW1haW4=,RkxVVFRFUl9HSVRfVVJMPWh0dHBzOi8vZ2l0aHViLmNvbS9mbHV0dGVyL2ZsdXR0ZXIuZ2l0,RkxVVFRFUl9GUkFNRVdPUktfUkVWSVNJT049OWFjOWIwNjZkMg==,RkxVVFRFUl9FTkdJTkVfUkVWSVNJT049OWFjOWIwNjZkMg==,RkxVVFRFUl9EQVJUX1ZFUlNJT049My4xNS4wIChidWlsZCAzLjE1LjAtMTMyLjAuZGV2KQ==
+DART_OBFUSCATION=false
+TRACK_WIDGET_CREATION=true
+TREE_SHAKE_ICONS=false
+PACKAGE_CONFIG=/Users/dltmdwls15/Desktop/projects/luckieverse_tab_flutter/.dart_tool/package_config.json

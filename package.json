@@ -1,0 +1,22 @@
+{
+  "name": "luckieverse",
+  "private": true,
+  "packageManager": "pnpm@11.17.0",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "dev:web": "pnpm --filter @luckieverse/web dev",
+    "build:web": "pnpm --filter @luckieverse/web build",
+    "check:web": "pnpm --filter @luckieverse/web check",
+    "test:e2e": "pnpm --filter @luckieverse/web test:e2e",
+    "test:workspace": "node --test scripts/workspace.test.mjs",
+    "mobile:pub": "cd apps/mobile && flutter pub get",
+    "mobile:run": "cd apps/mobile && flutter run",
+    "check:mobile": "cd apps/mobile && dart format --output=none --set-exit-if-changed lib test integration_test && flutter analyze && flutter test",
+    "build:android": "cd apps/mobile && flutter build apk",
+    "build:ios:simulator": "cd apps/mobile && flutter build ios --simulator",
+    "test:native:server": "pnpm build:web && node scripts/native-server.mjs",
+    "test:native": "cd apps/mobile && flutter test integration_test/webview_test.dart"
+  }
+}

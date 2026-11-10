@@ -1,5 +1,8 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:webview_flutter_platform_interface/webview_flutter_platform_interface.dart';
@@ -66,12 +69,15 @@ void main() {
       platform.delegate.finished?.call('https://example.com');
       await tester.pump();
       expect(find.text('다시 시도'), findsOneWidget);
+      final previousController = platform.controller;
       await tester.tap(find.text('다시 시도'));
       await tester.pump();
+      expect(identical(platform.controller, previousController), isFalse);
       expect(
-        platform.controller.operations.where((item) => item == 'load').length,
-        2,
+        previousController.operations.where((item) => item == 'load'),
+        hasLength(1),
       );
+      expect(platform.controller.operations.take(2), ['channel', 'load']);
       expect(find.byType(LinearProgressIndicator), findsOneWidget);
       await tester.pumpWidget(const SizedBox());
     },
@@ -252,4 +258,169 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     },
   );
+  testWidgets(
+    'iOS platform enum produces the lowercase bridge platform contract',
+    (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+      await start(tester);
+      platform.controller.channel?.onMessageReceived(
+        const JavaScriptMessage(
+          message: '{"version":1,"id":"ios-test","type":"ping"}',
+        ),
+      );
+      await tester.pump();
+      expect(
+        platform.controller.operations.where(
+          (item) => item.contains('"platform":"ios"'),
+        ),
+        hasLength(1),
+      );
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
+  testWidgets('late finish from a timed-out attempt cannot finish its retry', (
+    tester,
+  ) async {
+    await start(tester);
+    final previous = platform.delegate;
+    await tester.pump(const Duration(seconds: 31));
+    await tester.tap(find.text('다시 시도'));
+    await tester.pump();
+    previous.finished?.call('https://example.com');
+    await tester.pump();
+    expect(find.byType(LinearProgressIndicator), findsOneWidget);
+    await tester.pump(const Duration(seconds: 31));
+    expect(find.text('다시 시도'), findsOneWidget);
+  });
+  testWidgets('a previous currentUrl failure cannot fail a new navigation', (
+    tester,
+  ) async {
+    await start(tester);
+    final delayed = Completer<String?>();
+    platform.controller.delayedUrl = delayed;
+    platform.delegate.finished?.call('https://example.com');
+    platform.delegate.started?.call('https://example.com/next');
+    delayed.completeError(StateError('old navigation'));
+    await tester.pump();
+    expect(find.text('다시 시도'), findsNothing);
+    expect(find.byType(LinearProgressIndicator), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
+  testWidgets(
+    'Android back without web history exits through the system channel',
+    (tester) async {
+      final calls = <String>[];
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          calls.add(call.method);
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+      await start(tester);
+      await tester.binding.handlePopRoute();
+      await tester.pump();
+      expect(
+        calls.where((method) => method == 'SystemNavigator.pop'),
+        hasLength(1),
+      );
+      expect(platform.controller.operations, isNot(contains('back')));
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
+  testWidgets('a late redirect cannot clear a timed-out attempt', (
+    tester,
+  ) async {
+    await start(tester);
+    await tester.pump(const Duration(seconds: 31));
+    platform.delegate.started?.call('https://example.com/redirect');
+    platform.delegate.finished?.call('https://example.com/redirect');
+    await tester.pump();
+    expect(find.text('다시 시도'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
+  testWidgets('explicit Android back recovers from a failed history entry', (
+    tester,
+  ) async {
+    await start(tester);
+    platform.delegate.finished?.call('https://example.com');
+    await tester.pump();
+    platform.controller.url = 'https://example.com/next';
+    platform.delegate.started?.call('https://example.com/next');
+    platform.delegate.failed?.call(
+      WebResourceError(
+        errorCode: -2,
+        description: 'failed entry',
+        isForMainFrame: true,
+      ),
+    );
+    await tester.pump();
+    expect(find.text('다시 시도'), findsOneWidget);
+    platform.controller.hasHistory = true;
+    await tester.binding.handlePopRoute();
+    await tester.pump();
+    platform.controller.url = 'https://example.com';
+    platform.delegate.started?.call('https://example.com');
+    platform.delegate.finished?.call('https://example.com');
+    await tester.pump();
+    expect(find.text('다시 시도'), findsNothing);
+    expect(find.byKey(const Key('fake-webview')), findsOneWidget);
+    expect(find.byType(LinearProgressIndicator), findsNothing);
+  });
+  testWidgets('normal fragment back stays ready without page callbacks', (
+    tester,
+  ) async {
+    await start(tester);
+    platform.delegate.finished?.call('https://example.com');
+    await tester.pump();
+    await platform.delegate.navigation?.call(
+      NavigationRequest(url: 'https://example.com#section', isMainFrame: true),
+    );
+    platform.controller.url = 'https://example.com#section';
+    platform.controller.hasHistory = true;
+    await tester.binding.handlePopRoute();
+    await tester.pump();
+    platform.controller.url = 'https://example.com';
+    await tester.pump(const Duration(seconds: 31));
+    expect(platform.controller.operations, contains('back'));
+    expect(find.text('다시 시도'), findsNothing);
+    expect(find.byType(LinearProgressIndicator), findsNothing);
+  });
+  testWidgets('HTTP failure before start also handles an in-page navigation', (
+    tester,
+  ) async {
+    await start(tester);
+    platform.delegate.finished?.call('https://example.com');
+    await tester.pump();
+    expect(
+      await platform.delegate.navigation?.call(
+        NavigationRequest(
+          url: 'https://example.com/failure',
+          isMainFrame: true,
+        ),
+      ),
+      NavigationDecision.navigate,
+    );
+    platform.delegate.httpFailed?.call(
+      HttpResponseError(
+        request: WebResourceRequest(
+          uri: Uri.parse('https://example.com/failure'),
+        ),
+        response: const WebResourceResponse(uri: null, statusCode: 503),
+      ),
+    );
+    platform.delegate.started?.call('https://example.com/failure');
+    platform.controller.url = 'https://example.com/failure';
+    platform.delegate.finished?.call('https://example.com/failure');
+    await tester.pump();
+    expect(find.text('다시 시도'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
 }

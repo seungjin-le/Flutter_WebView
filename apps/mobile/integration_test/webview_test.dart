@@ -55,8 +55,11 @@ void main() {
       if (find.text('다시 시도').evaluate().isNotEmpty) {
         fail('WebView showed a loading error');
       }
+      if (find.byType(LinearProgressIndicator).evaluate().isNotEmpty) {
+        return false;
+      }
       final result = await controller.runJavaScriptReturningResult(
-        'Boolean(document.querySelector("button"))',
+        'document.readyState === "complete" && Boolean(document.querySelector("button"))',
       );
       return result == true || result == 'true';
     });
@@ -66,9 +69,13 @@ void main() {
     await controller.runJavaScript('document.querySelector("button").click()');
     await waitUntil(tester, () async {
       final result = await controller.runJavaScriptReturningResult(
-        'document.querySelector("[role=status]")?.textContent.includes("앱과 연결됐어") === true',
+        'document.querySelector("[role=status]")?.textContent ?? ""',
       );
-      return result == true || result == 'true';
+      final status = result.toString();
+      if (status.contains('시간') || status.contains('실패')) {
+        fail('Native bridge failed: $status');
+      }
+      return status.contains('앱과 연결됐어');
     });
   }
 
@@ -78,6 +85,39 @@ void main() {
       final controller = await start(tester, '/');
       await ready(tester, controller);
       await ping(tester, controller);
+      // Browser back intentionally skips script-created history without a user gesture.
+      await tester.tapAt(
+        tester.getTopLeft(find.byType(WebViewWidget)) + const Offset(30, 30),
+      );
+      await waitUntil(tester, () async {
+        final active = await controller.runJavaScriptReturningResult(
+          'navigator.userActivation.hasBeenActive',
+        );
+        return active == true || active == 'true';
+      });
+      await controller.runJavaScript('location.hash = "section"');
+      await waitUntil(
+        tester,
+        () async =>
+            (await controller.currentUrl())?.endsWith('#section') == true &&
+            await controller.canGoBack(),
+      );
+      if (defaultTargetPlatform == TargetPlatform.android) {
+        expect(
+          await controller.canGoBack(),
+          isTrue,
+          reason: 'Expected WebView history before native back',
+        );
+        await tester.binding.handlePopRoute();
+      } else {
+        await controller.goBack();
+      }
+      await waitUntil(
+        tester,
+        () async => (await controller.currentUrl())?.endsWith('/') == true,
+      );
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.byType(LinearProgressIndicator), findsNothing);
       await controller.reload();
       await tester.pump(const Duration(seconds: 1));
       await ready(tester, controller);
@@ -95,6 +135,11 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
       expect((await controller.currentUrl())?.endsWith('/next'), isTrue);
       if (defaultTargetPlatform == TargetPlatform.android) {
+        expect(
+          await controller.canGoBack(),
+          isTrue,
+          reason: 'Expected WebView history before native back',
+        );
         await tester.binding.handlePopRoute();
       } else {
         await controller.goBack();
@@ -105,6 +150,25 @@ void main() {
       );
       await ready(tester, controller);
       await ping(tester, controller);
+      if (defaultTargetPlatform == TargetPlatform.android) {
+        await controller.runJavaScript('location.href = "/failure"');
+        await waitUntil(
+          tester,
+          () async => find.text('다시 시도').evaluate().isNotEmpty,
+        );
+        expect(
+          await controller.canGoBack(),
+          isTrue,
+          reason: 'Expected WebView history before native back',
+        );
+        await tester.binding.handlePopRoute();
+        await waitUntil(
+          tester,
+          () async => (await controller.currentUrl())?.endsWith('/') == true,
+        );
+        await ready(tester, controller);
+        await ping(tester, controller);
+      }
       await tester.tap(find.text('카운터 데모'));
       await tester.pumpAndSettle();
       await tester.tap(find.byIcon(Icons.add));
@@ -133,7 +197,7 @@ void main() {
     }
 
     await setFailure(true);
-    final controller = await start(tester, '/recover');
+    await start(tester, '/recover');
     await waitUntil(
       tester,
       () async => find.text('다시 시도').evaluate().isNotEmpty,
@@ -141,6 +205,10 @@ void main() {
     await setFailure(false);
     await tester.tap(find.text('다시 시도'));
     await tester.pump();
+    final controller = tester
+        .state<WebAppScreenState>(find.byType(WebAppScreen))
+        .controller;
+    if (controller == null) fail('Retry controller missing');
     await ready(tester, controller);
     await ping(tester, controller);
   });

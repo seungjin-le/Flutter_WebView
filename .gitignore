@@ -48,6 +48,8 @@ app.*.map.json
 .widget_preview/
 
 # Monorepo outputs
+.env.local
+.env.*.local
 **/build/
 **/.dart_tool/
 **/node_modules/

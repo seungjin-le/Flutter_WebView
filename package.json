@@ -17,6 +17,10 @@
     "build:android": "cd apps/mobile && flutter build apk",
     "build:ios:simulator": "cd apps/mobile && flutter build ios --simulator",
     "test:native:server": "pnpm build:web && node scripts/native-server.mjs",
-    "test:native": "cd apps/mobile && flutter test integration_test/webview_test.dart"
+    "test:native": "cd apps/mobile && flutter test integration_test/webview_test.dart",
+    "dev:master": "pnpm --filter @luckieverse/master dev",
+    "build:master": "pnpm --filter @luckieverse/master build",
+    "check:master": "pnpm --filter @luckieverse/master check",
+    "test:e2e:master": "pnpm --filter @luckieverse/master test:e2e"
   }
 }

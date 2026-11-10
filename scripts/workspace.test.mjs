@@ -27,6 +27,30 @@ test('Nested generated artifacts are ignored', () => {
     '**/dist/', '**/test-results/']) assert.ok(ignore.includes(pattern), pattern);
 });
 
+test('Web and master are separate workspaces with centrally managed React versions', () => {
+  const workspace = readFileSync('pnpm-workspace.yaml', 'utf8');
+  assert.match(workspace, /^  - apps\/master$/m);
+  const catalog = workspace.match(/^catalog:\n  react: (\S+)\n  react-dom: (\S+)$/m);
+  assert.ok(catalog, 'React versions must be defined in the shared catalog');
+  assert.equal(catalog[1], catalog[2], 'React and React DOM must use matching versions');
+  const { scripts } = JSON.parse(readFileSync('package.json', 'utf8'));
+  for (const [command, target] of Object.entries({
+    'dev:master': 'dev', 'build:master': 'build',
+    'check:master': 'check', 'test:e2e:master': 'test:e2e',
+  })) {
+    assert.equal(scripts[command], `pnpm --filter @luckieverse/master ${target}`);
+  }
+  for (const app of ['web', 'master']) {
+    const manifest = JSON.parse(readFileSync(`apps/${app}/package.json`, 'utf8'));
+    assert.equal(manifest.name, `@luckieverse/${app}`);
+    assert.equal(manifest.private, true);
+    assert.equal(manifest.dependencies.react, 'catalog:');
+    assert.equal(manifest.dependencies['react-dom'], 'catalog:');
+  }
+  const master = JSON.parse(readFileSync('apps/master/package.json', 'utf8'));
+  assert.match(master.scripts.dev, /--port 5175 --strictPort$/);
+});
+
 test('Network access is available in release but HTTP exceptions are debug-only', () => {
   const main = readFileSync('apps/mobile/android/app/src/main/AndroidManifest.xml', 'utf8');
   const debug = readFileSync('apps/mobile/android/app/src/debug/AndroidManifest.xml', 'utf8');

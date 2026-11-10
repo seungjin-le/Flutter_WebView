@@ -8,7 +8,7 @@
     "check": "pnpm lint && tsc --noEmit && pnpm test",
     "test:e2e": "playwright test"
   },
-  "dependencies": { "react": "19.3.1", "react-dom": "19.3.1" },
+  "dependencies": { "react": "catalog:", "react-dom": "catalog:" },
   "devDependencies": {
     "@eslint/js": "^9.39.1", "eslint": "^9.39.1", "typescript-eslint": "8.72.2",
     "@playwright/test": "1.65.0", "@types/react": "^19.0.0", "@types/react-dom": "^19.0.0",

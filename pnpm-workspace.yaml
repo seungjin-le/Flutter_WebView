@@ -1,5 +1,9 @@
 packages:
   - apps/web
+  - apps/master
+catalog:
+  react: 19.3.1
+  react-dom: 19.3.1
 minimumReleaseAgeExclude:
   - '@rolldown/binding-android-arm-eabi@1.2.18'
   - '@rolldown/binding-android-arm64@1.2.18'

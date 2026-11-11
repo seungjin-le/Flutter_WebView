@@ -1,6 +1,23 @@
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { test } from 'node:test';
+import { createRequire } from 'node:module';
+import { resolve } from 'node:path';
+
+test('Both web apps can resolve the requested libraries without MSW or React Router', () => {
+  for (const app of ['web', 'master']) {
+    const require = createRequire(resolve(`apps/${app}/package.json`));
+    const manifest = require('./package.json');
+    for (const name of ['@tanstack/react-query', '@tanstack/react-router', 'zod',
+      'react-hook-form', '@hookform/resolvers/zod', 'zustand', 'axios', 'date-fns',
+      'tailwindcss', '@tailwindcss/vite', 'vitest']) {
+      assert.ok(require.resolve(name), `${app}: ${name}`);
+    }
+    for (const name of ['msw', 'react-router', 'react-router-dom']) {
+      assert.equal(manifest.dependencies[name] ?? manifest.devDependencies[name], undefined);
+    }
+  }
+});
 
 test('Flutter sources and all platform hosts live under apps/mobile', () => {
   for (const path of ['pubspec.yaml', 'lib/main.dart', 'test/widget_test.dart',

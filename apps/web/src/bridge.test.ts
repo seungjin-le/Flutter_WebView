@@ -5,10 +5,10 @@ const reply = (id: string, platform = 'android') => window.dispatchEvent(new Cus
   'luckieverse:response', { detail: { version: 1, id, type: 'pong', platform } },
 ))
 
-beforeEach(() => { vi.useFakeTimers() })
+beforeEach(() => { vi.stubGlobal('window', new EventTarget()); vi.useFakeTimers() })
 afterEach(() => {
   window.dispatchEvent(new Event('pagehide'))
-  delete window.LuckieverseBridge
+  vi.unstubAllGlobals()
   vi.useRealTimers()
 })
 
@@ -62,11 +62,9 @@ it('works on HTTP development hosts without crypto.randomUUID', async () => {
   const original = crypto.getRandomValues.bind(crypto)
   vi.stubGlobal('crypto', { getRandomValues: original })
   vi.resetModules()
-  try {
-    const bridge = await import('./bridge')
-    window.LuckieverseBridge = { postMessage(message) {
-      reply(JSON.parse(message).id)
-    } }
-    await expect(bridge.pingNative()).resolves.toHaveProperty('type', 'pong')
-  } finally { vi.unstubAllGlobals() }
+  const bridge = await import('./bridge')
+  window.LuckieverseBridge = { postMessage(message) {
+    reply(JSON.parse(message).id)
+  } }
+  await expect(bridge.pingNative()).resolves.toHaveProperty('type', 'pong')
 })

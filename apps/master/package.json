@@ -12,18 +12,29 @@
   },
   "dependencies": {
     "react": "catalog:",
-    "react-dom": "catalog:"
+    "react-dom": "catalog:",
+    "@tanstack/react-query": "catalog:",
+    "@tanstack/react-router": "catalog:",
+    "zod": "catalog:",
+    "react-hook-form": "catalog:",
+    "@hookform/resolvers": "catalog:",
+    "zustand": "catalog:",
+    "axios": "catalog:",
+    "date-fns": "catalog:"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.1",
-    "eslint": "^9.39.1",
-    "typescript-eslint": "8.72.2",
-    "@playwright/test": "1.65.0",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "@types/node": "^24.0.0",
-    "@vitejs/plugin-react": "6.3.0",
-    "typescript": "5.9.3",
-    "vite": "8.3.7"
+    "@eslint/js": "catalog:",
+    "@playwright/test": "catalog:",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
+    "eslint": "catalog:",
+    "typescript": "catalog:",
+    "typescript-eslint": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:",
+    "tailwindcss": "catalog:",
+    "@tailwindcss/vite": "catalog:"
   }
 }

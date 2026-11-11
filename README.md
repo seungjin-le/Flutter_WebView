@@ -29,7 +29,15 @@ master는 `pnpm dev:master`로 실행하며 `http://127.0.0.1:5175`를 사용해
 
 ## 라이브러리 버전 관리
 
-`pnpm-workspace.yaml`의 `catalog`에서 React·React DOM 버전을 함께 관리하고, 각 앱은 `package.json`에 `"react": "catalog:"`, `"react-dom": "catalog:"`로 선언해. 다른 라이브러리도 버전을 함께 관리할 필요가 생기면 catalog에 추가하고 사용하는 앱에서만 참조해. 앱 전용 라이브러리는 해당 앱의 `package.json`에서 직접 관리해.
+`pnpm-workspace.yaml`의 `catalog`에서 공통 라이브러리와 개발 도구의 버전을 관리하고, 각 앱의 `package.json`은 `"catalog:"`로 참조해. 앱 전용 라이브러리는 해당 앱에서 직접 관리해.
+
+- 런타임: React·React DOM, TanStack Query·Router, Zod, React Hook Form·resolvers, Zustand, Axios, date-fns.
+- 스타일: Tailwind CSS와 `@tailwindcss/vite`. 각 앱의 `src/style.css`에서 불러오며 클래스 탐색은 해당 앱 안으로 제한해. 기존 커스텀 CSS는 제거했고 Preflight를 포함한 Tailwind 기본 초기화를 적용해.
+- 개발: TypeScript, Vite·React 플러그인, ESLint·typescript-eslint, Playwright, Vitest, React·Node 타입 패키지.
+
+MSW와 React Router는 설치하지 않아. TanStack Router 패키지명은 `@tanstack/react-router`야. 라이브러리는 설치만 되어 있고 라우트·QueryClient·폼·store·API 클라이언트는 기능을 구현할 때 앱별로 구성해. master에는 아직 단위 테스트가 없어 Vitest 실행 명령은 추가하지 않았어.
+
+TypeScript는 현재 `typescript-eslint`의 지원 범위(`>=4.8.4 <6.1.0`)에 맞춰 6.0.3을 사용해. TypeScript 7 전환은 린터 지원 이후 진행하고, `@types/node`는 실행 환경과 같은 Node 24 계열 최신을 사용해. [지원 범위](https://typescript-eslint.io/users/dependency-versions/)
 
 공통 버전을 바꾼 뒤 `pnpm install`로 잠금 파일을 갱신하고 두 앱의 검사·E2E·빌드를 실행해. catalog는 버전 관리 기능이며 실행 중인 상태나 배포 번들을 공유하지 않아. [pnpm Catalogs](https://pnpm.io/catalogs)
 

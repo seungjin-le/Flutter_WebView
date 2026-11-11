@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
+import 'fold_state.dart';
 import 'native_bridge.dart';
 import 'web_policy.dart';
 
@@ -25,12 +26,32 @@ class WebAppScreenState extends State<WebAppScreen> {
   bool _loading = true;
   bool _configured = false;
   int _generation = 0;
+  late FoldState _foldState;
+  StreamSubscription<Object?>? _foldEvents;
+  String? _foldSubscriptionId;
+  String? _foldRequestedId;
+  int _foldCommandVersion = 0;
 
   @override
   void initState() {
     super.initState();
     _base = parseWebAppUrl(widget.webAppUrl, allowLocalHttp: kDebugMode);
-    if (_base != null) unawaited(_initialize());
+    final platform = defaultTargetPlatform.name.toLowerCase();
+    _foldState = FoldState.unknown(platform);
+    if (_base != null) {
+      if (platform == 'ios' || platform == 'android') {
+        _foldEvents = const EventChannel('luckieverse/fold_state')
+            .receiveBroadcastStream()
+            .listen(
+              (value) =>
+                  _updateFoldState(FoldState.fromNative(value, platform)),
+              onError: (Object _) =>
+                  _updateFoldState(FoldState.unknown(platform)),
+              onDone: () => _updateFoldState(FoldState.unknown(platform)),
+            );
+      }
+      unawaited(_initialize());
+    }
   }
 
   bool _isCurrent(WebViewController? controller) =>
@@ -39,6 +60,8 @@ class WebAppScreenState extends State<WebAppScreen> {
   Future<void> _initialize() async {
     _timer?.cancel();
     _generation++;
+    _foldSubscriptionId = null;
+    _foldRequestedId = null;
     setState(() {
       _controller = null;
       _documentUrl = null;
@@ -119,6 +142,8 @@ class WebAppScreenState extends State<WebAppScreen> {
       return;
     }
     final generation = ++_generation;
+    _foldSubscriptionId = null;
+    _foldRequestedId = null;
     _timer?.cancel();
     setState(() {
       _documentUrl = url;
@@ -158,6 +183,8 @@ class WebAppScreenState extends State<WebAppScreen> {
     if (!mounted) return;
     _timer?.cancel();
     _generation++;
+    _foldSubscriptionId = null;
+    _foldRequestedId = null;
     setState(() {
       _error = message;
       _loading = false;
@@ -178,30 +205,90 @@ class WebAppScreenState extends State<WebAppScreen> {
     }
   }
 
-  Future<void> _receive(WebViewController controller, String message) async {
-    final base = _base;
-    final script = pongScriptFor(
-      message,
-      defaultTargetPlatform.name.toLowerCase(),
-    );
-    if (!_isCurrent(controller) ||
-        base == null ||
-        script == null ||
-        _error != null) {
-      return;
+  void _updateFoldState(FoldState state) {
+    if (!mounted) return;
+    _foldState = state;
+    final controller = _controller;
+    final id = _foldSubscriptionId;
+    if (controller != null && id != null) {
+      unawaited(_sendFoldUpdate(controller, id));
     }
+  }
+
+  Future<void> _sendFoldUpdate(WebViewController controller, String id) async {
+    final base = _base;
     final generation = _generation;
+    if (!_isCurrent(controller) || base == null || _error != null) return;
     try {
       final current = await controller.currentUrl();
       if (!_isCurrent(controller) ||
           generation != _generation ||
+          _foldSubscriptionId != id ||
+          _error != null ||
           current == null ||
           !isAllowedNavigation(base, current)) {
         return;
       }
-      await controller.runJavaScript(script);
+      // The subscription ID belongs to this document, even after SPA navigation.
+      await controller.runJavaScript(foldStateScript(id, _foldState));
     } catch (_) {
-      if (_isCurrent(controller) && generation == _generation) {
+      // Optional device metadata must not replace a working page with an error.
+    }
+  }
+
+  Future<void> _receive(WebViewController controller, String message) async {
+    final base = _base;
+    final platform = defaultTargetPlatform.name.toLowerCase();
+    final pongScript = pongScriptFor(message, platform);
+    final foldRequest = foldRequestFor(message);
+    if (!_isCurrent(controller) ||
+        base == null ||
+        _error != null ||
+        (pongScript == null && foldRequest == null) ||
+        (platform != 'ios' && platform != 'android')) {
+      return;
+    }
+    final generation = _generation;
+    final subscribing = foldRequest?.type == 'subscribeFoldState';
+    if (foldRequest != null) {
+      if (subscribing) {
+        _foldRequestedId = foldRequest.id;
+        _foldCommandVersion++;
+      } else if (foldRequest.type == 'unsubscribeFoldState' &&
+          _foldRequestedId == foldRequest.id) {
+        _foldRequestedId = null;
+        _foldCommandVersion++;
+      }
+    }
+    final foldCommand = _foldCommandVersion;
+    try {
+      final current = await controller.currentUrl();
+      if (!_isCurrent(controller) ||
+          generation != _generation ||
+          (subscribing && foldCommand != _foldCommandVersion) ||
+          _error != null ||
+          current == null ||
+          !isAllowedNavigation(base, current)) {
+        return;
+      }
+      if (pongScript != null) {
+        await controller.runJavaScript(pongScript);
+      } else if (foldRequest != null) {
+        if (foldRequest.type == 'unsubscribeFoldState') {
+          if (_foldSubscriptionId == foldRequest.id) _foldSubscriptionId = null;
+          return;
+        }
+        if (foldRequest.type == 'subscribeFoldState') {
+          _foldSubscriptionId = foldRequest.id;
+        }
+        await controller.runJavaScript(
+          foldStateScript(foldRequest.id, _foldState),
+        );
+      }
+    } catch (_) {
+      if (pongScript != null &&
+          _isCurrent(controller) &&
+          generation == _generation) {
         _fail('앱 연결에 실패했어. 화면을 다시 불러와 줘.');
       }
     }
@@ -243,7 +330,10 @@ class WebAppScreenState extends State<WebAppScreen> {
   @override
   void dispose() {
     _generation++;
+    _foldSubscriptionId = null;
+    _foldRequestedId = null;
     _timer?.cancel();
+    unawaited(_foldEvents?.cancel());
     super.dispose();
   }
 

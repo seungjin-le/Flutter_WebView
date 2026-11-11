@@ -57,3 +57,33 @@ Android의 HTTP 오류가 page-start보다 먼저 오는 순서는 실제 에뮬
 정상 fragment 뒤로가기는 페이지 시작 콜백이 없어도 기존 준비 상태를 유지하며, 오류 복구용 초기화는 오류 상태에만 적용해. 위젯의 31초 경계 검사와 실제 WebView의 fragment 왕복 시나리오로 구분해 검증해.
 
 실제 WebView fragment 검사는 문서 로딩 완료와 실제 터치에 의한 user activation을 확인한 뒤 이력을 생성해. 사용자 동작 없는 스크립트 이력은 [Chromium history intervention](https://chromium.googlesource.com/chromium/src/+/main/docs/history_manipulation_intervention.md)에 의해 네이티브 back 대상에서 제외될 수 있어. 앱 내부의 새 문서 탐색도 허용된 navigation request에서 URL을 먼저 기록해 HTTP 오류-before-start 순서를 처리하고 fragment-only 요청은 로딩 상태를 바꾸지 않아.
+
+
+## Duo / Fold 구분과 상태 전달
+
+| 조건 | 구현·대응 테스트 |
+| --- | --- |
+| iOS 힌지 상태·지원 계열·nil 전환 | FoldStateStream.swift, RunnerTests의 상태 매핑·기기 증거 기억·구독 해제 검사 |
+| Android FLAT/HALF_OPENED·TABLETOP·빈 feature | FoldState.kt/Stream.kt, FoldStateTest의 7개 매핑·API 실패 검사 |
+| 웹 초기 조회·변경 구독·여러 소비자·해제 | fold-state.test.ts, fold-state.spec.ts, fold_screen_test.dart |
+| null/undefined/false/0/빈 문자열·잘못된 enum·플랫폼 | fold_state_test.dart, fold-state.test.ts의 malformed 검사; Android folded 거부 |
+| 동시 요청·순서 역전·이전 ID·소비자 예외 | fold-state.test.ts와 fold-state.spec.ts |
+| 없는 브리지·전송 예외·5초 timeout | fold-state.test.ts와 fold-state.spec.ts; unknown 정상 상태와 구분 |
+| SPA·새 문서·재시도·오류·dispose·bfcache | fold_screen_test.dart, fold-state.test.ts/spec.ts, fold_webview_test.dart |
+| 실제 네이티브 → Flutter → WebView 조회·구독 | integration_test/fold_webview_test.dart + Vite의 e2e/fixtures/native-fold.html |
+| 기존 ping·화면·신뢰 origin·카운터 | 기존 bridge/web_contract/web_screen/widget 테스트 및 webview_test.dart |
+
+네트워크 오류·로딩 timeout은 기존 WebView 오류·복구 시나리오를 재사용한다. 기기 상태 API에는 사용자 입력 폼·계정·서버 데이터가 없고 별도 런타임 권한이 필요 없으므로 인증 권한·빈 서버 목록은 비적용이다. API 미지원·빈 힌지 데이터는 unknown 시나리오로, 취소·재호출·페이지 복귀 같은 예상치 못한 행동은 lifecycle 시나리오로 검증한다.
+
+검증은 수정한 mobile·web에 한정하고 master는 실행하지 않는다. 웹 단독 변경이면 web 검사만 실행한다. 네이티브 통합 fixture는 개발 서버에서만 제공하며 운영 앱에 UI나 테스트 전역을 넣지 않는다.
+
+```sh
+# web 폴더: 테스트 전용 native fixture 서버
+pnpm exec vite --host 127.0.0.1 --port 5175 --strictPort
+# mobile 폴더: 해당 기기와 접근 가능한 로컬 주소 지정
+flutter test integration_test/fold_webview_test.dart -d <device-id> \
+  --dart-define=WEB_APP_URL=http://127.0.0.1:5175 \
+  --dart-define=FOLD_DEVICE=ios-duo
+```
+
+Android는 `FOLD_DEVICE=android-fold`, 일반 기기는 `unknown`을 사용한다. `FOLD_TRANSITIONS=true`이면 테스트가 출력하는 `FOLD_READY_FOR_HALF_OPEN`/`FOLD_READY_FOR_UNFOLDED`에 맞춰 외부에서 시뮬레이터·에뮬레이터 힌지를 변경해야 한다. 이 옵션 없이 통과한 결과는 물리적 접힘 전환의 증거가 아니다. mock, 시뮬레이터/에뮬레이터, 물리 기기 검증을 따로 보고한다.

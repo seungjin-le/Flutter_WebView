@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en"><head><meta charset="UTF-8"><title>Native fold fixture</title></head>
+<body><p id="state">Connecting</p><script type="module">
+import { getFoldState, subscribeFoldState } from '/src/fold-state.ts'
+window.foldStates = []
+window.foldErrors = []
+window.getFoldState = getFoldState
+window.stopFold = subscribeFoldState(state => {
+  window.foldStates.push(state)
+  document.querySelector('#state').textContent = JSON.stringify(state)
+}, error => window.foldErrors.push(error.message))
+window.readFold = () => getFoldState().then(state => { window.foldQuery = state })
+</script></body></html>

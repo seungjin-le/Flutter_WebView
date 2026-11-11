@@ -12,9 +12,17 @@ import 'fake_webview.dart';
 
 void main() {
   late FakeWebViewPlatform platform;
+  const foldChannel = MethodChannel('luckieverse/fold_state');
+  TestWidgetsFlutterBinding.ensureInitialized();
   setUp(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(foldChannel, (_) async => null);
     platform = FakeWebViewPlatform();
     WebViewPlatform.instance = platform;
+  });
+  tearDown(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(foldChannel, null);
   });
   Future<void> start(WidgetTester tester) async {
     await tester.pumpWidget(const SizedBox());

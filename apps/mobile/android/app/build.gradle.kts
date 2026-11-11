@@ -47,3 +47,8 @@ kotlin {
 flutter {
     source = "../.."
 }
+
+dependencies {
+    implementation("androidx.window:window-java:1.5.1")
+    testImplementation("junit:junit:4.13.2")
+}

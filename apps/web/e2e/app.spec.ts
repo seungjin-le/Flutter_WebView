@@ -41,7 +41,7 @@ test('a silent native transport times out and can be retried', async ({ page }) 
 })
 
 // Preflight resets the old design while app-local utilities remain available.
-test('Tailwind resets custom styles and utilities work at responsive boundaries', async ({ page }) => {
+test('shared Tailwind tokens, reset and app-local responsive utilities work', async ({ page }) => {
   await page.goto('/')
   await expect(page.locator('body')).toHaveCSS('margin', '0px')
   await expect(page.getByRole('heading', { level: 1 })).toHaveCSS('font-size', '16px')
@@ -53,14 +53,21 @@ test('Tailwind resets custom styles and utilities work at responsive boundaries'
   await page.evaluate(() => {
     const probe = document.createElement('div')
     probe.id = 'tailwind-probe'
-    probe.className = 'grid gap-2 p-4 md:p-8'
+    probe.className = 'grid gap-2 p-4 md:p-8 bg-surface text-content font-sans z-[71]'
     document.body.append(probe)
   })
   const probe = page.locator('#tailwind-probe')
+  await expect(probe).toHaveCSS('background-color', 'rgb(255, 255, 255)')
+  await expect(probe).toHaveCSS('color', 'rgb(0, 0, 0)')
+  await expect(probe).toHaveCSS('font-family', /-apple-system/)
+  await expect(probe).toHaveCSS('z-index', '71')
   await expect(probe).toHaveCSS('display', 'grid')
   await expect(probe).toHaveCSS('gap', '8px')
   await page.setViewportSize({ width: 767, height: 900 })
   await expect(probe).toHaveCSS('padding', '16px')
   await page.setViewportSize({ width: 768, height: 900 })
   await expect(probe).toHaveCSS('padding', '32px')
+  // Construct the other app's class dynamically so this app's scanner cannot include it.
+  await probe.evaluate((element, value) => { element.setAttribute('class', ['z-[', value, ']'].join('')) }, 83)
+  await expect(probe).toHaveCSS('z-index', 'auto')
 })

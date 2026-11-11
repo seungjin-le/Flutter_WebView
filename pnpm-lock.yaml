@@ -85,6 +85,9 @@ importers:
       '@hookform/resolvers':
         specifier: 'catalog:'
         version: 7.0.5(react-hook-form@7.91.0(@types/react@19.3.0)(react@19.3.1))(zod@4.6.7)
+      '@luckieverse/theme':
+        specifier: workspace:*
+        version: link:../../packages/theme
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.107.1(@types/react@19.3.0)(react@19.3.1)
@@ -158,6 +161,9 @@ importers:
       '@hookform/resolvers':
         specifier: 'catalog:'
         version: 7.0.5(react-hook-form@7.91.0(@types/react@19.3.0)(react@19.3.1))(zod@4.6.7)
+      '@luckieverse/theme':
+        specifier: workspace:*
+        version: link:../../packages/theme
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.107.1(@types/react@19.3.0)(react@19.3.1)
@@ -225,6 +231,12 @@ importers:
       vitest:
         specifier: 'catalog:'
         version: 5.1.0(@types/node@24.19.2)(vite@8.3.8(@types/node@24.19.2)(jiti@2.7.0))
+
+  packages/theme:
+    dependencies:
+      tailwindcss:
+        specifier: 'catalog:'
+        version: 4.3.5
 
 packages:
 

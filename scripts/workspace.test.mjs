@@ -8,6 +8,7 @@ test('Both web apps can resolve the requested libraries without MSW or React Rou
   for (const app of ['web', 'master']) {
     const require = createRequire(resolve(`apps/${app}/package.json`));
     const manifest = require('./package.json');
+    assert.equal(require.resolve('@luckieverse/theme'), resolve('packages/theme/theme.css'));
     for (const name of ['@tanstack/react-query', '@tanstack/react-router', 'zod',
       'react-hook-form', '@hookform/resolvers/zod', 'zustand', 'axios', 'date-fns',
       'tailwindcss', '@tailwindcss/vite', 'vitest']) {

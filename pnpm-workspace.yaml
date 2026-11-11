@@ -1,6 +1,7 @@
 packages:
   - apps/web
   - apps/master
+  - packages/theme
 catalog:
   react: 19.3.1
   react-dom: 19.3.1

@@ -21,7 +21,8 @@
     "@hookform/resolvers": "catalog:",
     "zustand": "catalog:",
     "axios": "catalog:",
-    "date-fns": "catalog:"
+    "date-fns": "catalog:",
+    "@luckieverse/theme": "workspace:*"
   },
   "devDependencies": {
     "@eslint/js": "catalog:",

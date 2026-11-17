@@ -6,6 +6,8 @@
     "node": ">=24 <25"
   },
   "scripts": {
+    "format": "prettier --write apps/web apps/master packages/theme",
+    "format:check": "prettier --check apps/web apps/master packages/theme",
     "dev:web": "pnpm --filter @luckieverse/web dev",
     "build:web": "pnpm --filter @luckieverse/web build",
     "check:web": "pnpm --filter @luckieverse/web check",
@@ -22,5 +24,8 @@
     "build:master": "pnpm --filter @luckieverse/master build",
     "check:master": "pnpm --filter @luckieverse/master check",
     "test:e2e:master": "pnpm --filter @luckieverse/master test:e2e"
+  },
+  "devDependencies": {
+    "prettier": "3.10.1"
   }
 }

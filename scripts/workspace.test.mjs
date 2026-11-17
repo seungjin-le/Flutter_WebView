@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { test } from 'node:test';
 import { createRequire } from 'node:module';
-import { resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
+import { spawnSync } from 'node:child_process';
 
 test('Both web apps can resolve the requested libraries without MSW or React Router', () => {
   for (const app of ['web', 'master']) {
@@ -91,4 +92,44 @@ test('Network access is available in release but HTTP exceptions are debug-only'
   assert.match(iosDebug, /NSAllowsArbitraryLoadsInWebContent/);
   const project = readFileSync('apps/mobile/ios/Runner.xcodeproj/project.pbxproj', 'utf8');
   assert.equal(project.match(/INFOPLIST_FILE = "Runner\/Info-Debug.plist";/g)?.length, 1);
+});
+
+test('Prettier shares the agreed formatting across web and master through the real CLI', async () => {
+  const prettier = await import('prettier');
+  const require = createRequire(resolve('package.json'));
+  const manifestPath = require.resolve('prettier/package.json');
+  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+  const bin = resolve(dirname(manifestPath), manifest.bin);
+  const root = JSON.parse(readFileSync('package.json', 'utf8'));
+  assert.equal(root.devDependencies.prettier, prettier.version, 'Pin the installed formatter version');
+  const input = 'export const Card=()=>{const title="안녕";return <button title="카드">{title}</button>};\nconst values=[null,undefined,0,false,""];';
+  const expected = "export const Card = () => {\n  const title = '안녕'\n  return <button title=\"카드\">{title}</button>\n}\nconst values = [null, undefined, 0, false, '']\n";
+  const run = (file, source) => spawnSync(process.execPath, [bin, '--stdin-filepath', file], {
+    input: source, encoding: 'utf8', timeout: 10000,
+  });
+  for (const app of ['web', 'master']) {
+    const file = `apps/${app}/src/prettier-fixture.tsx`;
+    assert.deepEqual(await prettier.resolveConfig(file), {
+      semi: false, singleQuote: true, tabWidth: 2, printWidth: 100,
+      trailingComma: 'all', endOfLine: 'lf',
+    });
+    const formatted = run(file, input);
+    assert.equal(formatted.status, 0, formatted.stderr);
+    assert.equal(formatted.stdout, expected);
+    assert.equal(run(file, expected).stdout, expected, 'Formatting must be idempotent');
+    const empty = run(file, '');
+    assert.equal(empty.status, 0, empty.stderr);
+    assert.equal(empty.stdout, '');
+    const invalid = run(file, 'export const Card = (');
+    assert.equal(invalid.status, 2, invalid.stderr);
+    assert.match(invalid.stderr, /SyntaxError/);
+  }
+  for (const file of ['apps/mobile/lib/main.dart', 'apps/mobile/pubspec.yaml',
+    'apps/web/dist/fixture.js', 'apps/master/coverage/fixture.js',
+    'apps/web/test-results/fixture.json', 'apps/master/playwright-report/fixture.html',
+    'pnpm-lock.yaml']) {
+    const ignored = run(file, input);
+    assert.equal(ignored.status, 0, ignored.stderr);
+    assert.equal(ignored.stdout, input, `Ignored input must stay unchanged: ${file}`);
+  }
 });

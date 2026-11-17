@@ -94,4 +94,4 @@ pnpm test:native -d <android-device-id> --dart-define=WEB_APP_URL=http://10.0.2.
 pnpm test:native -d <ios-device-id> --dart-define=WEB_APP_URL=http://127.0.0.1:5174
 ```
 
-브라우저 E2E의 네이티브 채널은 mock이야. 실제 WebView 통신은 Flutter 통합 테스트로 따로 확인하고, emulator/simulator 결과를 물리 기기·운영 서버 확인으로 간주하지 않아. macOS·Windows·Linux·Flutter web 호스트 코드는 보존했지만 이번 WebView 지원 대상은 Android·iOS야.
+브라우저 E2E의 네이티브 채널은 mock이야. 실제 WebView 통신은 Flutter 통합 테스트로 따로 확인하고, emulator/simulator 결과를 물리 기기·운영 서버 확인으로 간주하지 않아. Flutter 호스트와 WebView 지원 대상은 Android·iOS야. 웹은 별도의 React 프로젝트인 `apps/web/`와 `apps/master/`에서 제공해.

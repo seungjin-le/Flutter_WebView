@@ -4,7 +4,7 @@
 
 현재 프로젝트는 `material_ui`를 사용하는 Flutter 카운터 앱이다. `lib/main.dart`에 진입점, `MyApp`, 홈 화면과 카운터 상태가 있다. 새 기능은 `lib/` 아래에 역할에 맞게 분리하되 기존 위젯과 테마를 우선 재사용한다.
 
-`test/widget_test.dart`에는 카운터 증가와 접근성 검사가 있다. 플랫폼별 호스트 코드는 `android/`, `ios/`, `web/`, `macos/`, `linux/`, `windows/`에 있다. 현재 별도 앱 에셋 디렉터리와 활성화된 에셋 선언은 없다. 이미지나 폰트를 추가할 때는 `pubspec.yaml`에 경로도 등록한다. `build/`와 `.dart_tool/`은 생성물이므로 직접 편집하지 않는다.
+`test/widget_test.dart`에는 카운터 증가와 접근성 검사가 있다. 플랫폼별 호스트 코드는 `apps/mobile/android/`, `apps/mobile/ios/`에 있다. 현재 별도 앱 에셋 디렉터리와 활성화된 에셋 선언은 없다. 이미지나 폰트를 추가할 때는 `pubspec.yaml`에 경로도 등록한다. `build/`와 `.dart_tool/`은 생성물이므로 직접 편집하지 않는다.
 
 ## 개발·빌드 명령
 
@@ -17,7 +17,7 @@
 - `flutter analyze`: 정적 분석과 린트를 실행한다.
 - `flutter test`: 전체 단위·위젯 테스트를 실행한다.
 - `flutter test test/widget_test.dart`: 기존 위젯 테스트만 실행한다.
-- `flutter build apk` 또는 `flutter build web`: Android 또는 웹 배포 산출물을 생성한다.
+- `flutter build apk`: Android 배포 산출물을 생성한다.
 
 ## 코드 스타일과 이름
 

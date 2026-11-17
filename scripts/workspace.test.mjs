@@ -20,11 +20,21 @@ test('Both web apps can resolve the requested libraries without MSW or React Rou
   }
 });
 
-test('Flutter sources and all platform hosts live under apps/mobile', () => {
+test('Flutter retains only Android and iOS hosts while React web apps remain', () => {
   for (const path of ['pubspec.yaml', 'lib/main.dart', 'test/widget_test.dart',
-    'android/app/build.gradle.kts', 'ios/Runner/Info.plist', 'web/index.html',
-    'macos/Runner/Info.plist', 'linux/CMakeLists.txt', 'windows/CMakeLists.txt']) {
+    'android/app/build.gradle.kts', 'ios/Runner/Info.plist']) {
     assert.ok(existsSync(`apps/mobile/${path}`), path);
+  }
+  for (const app of ['web', 'master']) {
+    assert.ok(existsSync(`apps/${app}/index.html`), app);
+  }
+  const metadata = readFileSync('apps/mobile/.metadata', 'utf8');
+  assert.deepEqual([...metadata.matchAll(/- platform: (\w+)/g)].map((match) => match[1]),
+    ['root', 'android', 'ios']);
+  const analysis = readFileSync('apps/mobile/analysis_options.yaml', 'utf8');
+  for (const platform of ['macos', 'linux', 'windows', 'web']) {
+    assert.equal(existsSync(`apps/mobile/${platform}`), false, platform);
+    assert.ok(!analysis.includes(`${platform}/**`), platform);
   }
   assert.equal(existsSync('pubspec.yaml'), false);
 });

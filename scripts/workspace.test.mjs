@@ -5,8 +5,8 @@ import { createRequire } from 'node:module';
 import { dirname, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
-test('Both web apps can resolve the requested libraries without MSW or React Router', () => {
-  for (const app of ['web', 'master']) {
+test('The web app can resolve the requested libraries without MSW or React Router', () => {
+  for (const app of ['web']) {
     const require = createRequire(resolve(`apps/${app}/package.json`));
     const manifest = require('./package.json');
     assert.equal(require.resolve('@luckieverse/theme'), resolve('packages/theme/theme.css'));
@@ -21,14 +21,12 @@ test('Both web apps can resolve the requested libraries without MSW or React Rou
   }
 });
 
-test('Flutter retains only Android and iOS hosts while React web apps remain', () => {
+test('Flutter retains only Android and iOS hosts while the React web app remains', () => {
   for (const path of ['pubspec.yaml', 'lib/main.dart', 'test/widget_test.dart',
     'android/app/build.gradle.kts', 'ios/Runner/Info.plist']) {
     assert.ok(existsSync(`apps/mobile/${path}`), path);
   }
-  for (const app of ['web', 'master']) {
-    assert.ok(existsSync(`apps/${app}/index.html`), app);
-  }
+  assert.ok(existsSync('apps/web/index.html'));
   const metadata = readFileSync('apps/mobile/.metadata', 'utf8');
   assert.deepEqual([...metadata.matchAll(/- platform: (\w+)/g)].map((match) => match[1]),
     ['root', 'android', 'ios']);
@@ -40,7 +38,7 @@ test('Flutter retains only Android and iOS hosts while React web apps remain', (
   assert.equal(existsSync('pubspec.yaml'), false);
 });
 
-test('Root commands expose both independent applications and verification', () => {
+test('Root commands expose the web application and verification', () => {
   const { scripts, packageManager } = JSON.parse(readFileSync('package.json', 'utf8'));
   assert.match(packageManager, /^pnpm@11\./);
   for (const name of ['dev:web', 'build:web', 'check:web', 'test:e2e',
@@ -56,28 +54,21 @@ test('Nested generated artifacts are ignored', () => {
     '**/dist/', '**/test-results/']) assert.ok(ignore.includes(pattern), pattern);
 });
 
-test('Web and master are separate workspaces with centrally managed React versions', () => {
+test('Web is the only React app workspace with centrally managed React versions', () => {
   const workspace = readFileSync('pnpm-workspace.yaml', 'utf8');
-  assert.match(workspace, /^  - apps\/master$/m);
+  assert.match(workspace, /^  - apps\/web$/m);
+  assert.doesNotMatch(workspace, /apps\/master/);
+  assert.equal(existsSync('apps/master'), false);
   const catalog = workspace.match(/^catalog:\n  react: (\S+)\n  react-dom: (\S+)$/m);
   assert.ok(catalog, 'React versions must be defined in the shared catalog');
   assert.equal(catalog[1], catalog[2], 'React and React DOM must use matching versions');
   const { scripts } = JSON.parse(readFileSync('package.json', 'utf8'));
-  for (const [command, target] of Object.entries({
-    'dev:master': 'dev', 'build:master': 'build',
-    'check:master': 'check', 'test:e2e:master': 'test:e2e',
-  })) {
-    assert.equal(scripts[command], `pnpm --filter @luckieverse/master ${target}`);
-  }
-  for (const app of ['web', 'master']) {
-    const manifest = JSON.parse(readFileSync(`apps/${app}/package.json`, 'utf8'));
-    assert.equal(manifest.name, `@luckieverse/${app}`);
-    assert.equal(manifest.private, true);
-    assert.equal(manifest.dependencies.react, 'catalog:');
-    assert.equal(manifest.dependencies['react-dom'], 'catalog:');
-  }
-  const master = JSON.parse(readFileSync('apps/master/package.json', 'utf8'));
-  assert.match(master.scripts.dev, /--port 5175 --strictPort$/);
+  assert.deepEqual(Object.keys(scripts).filter((name) => name.endsWith(':master')), []);
+  const manifest = JSON.parse(readFileSync('apps/web/package.json', 'utf8'));
+  assert.equal(manifest.name, '@luckieverse/web');
+  assert.equal(manifest.private, true);
+  assert.equal(manifest.dependencies.react, 'catalog:');
+  assert.equal(manifest.dependencies['react-dom'], 'catalog:');
 });
 
 test('Network access is available in release but HTTP exceptions are debug-only', () => {
@@ -94,7 +85,7 @@ test('Network access is available in release but HTTP exceptions are debug-only'
   assert.equal(project.match(/INFOPLIST_FILE = "Runner\/Info-Debug.plist";/g)?.length, 1);
 });
 
-test('Prettier shares the agreed formatting across web and master through the real CLI', async () => {
+test('Prettier shares the agreed formatting for web through the real CLI', async () => {
   const prettier = await import('prettier');
   const require = createRequire(resolve('package.json'));
   const manifestPath = require.resolve('prettier/package.json');
@@ -107,7 +98,7 @@ test('Prettier shares the agreed formatting across web and master through the re
   const run = (file, source) => spawnSync(process.execPath, [bin, '--stdin-filepath', file], {
     input: source, encoding: 'utf8', timeout: 10000,
   });
-  for (const app of ['web', 'master']) {
+  for (const app of ['web']) {
     const file = `apps/${app}/src/prettier-fixture.tsx`;
     assert.deepEqual(await prettier.resolveConfig(file), {
       semi: false, singleQuote: true, tabWidth: 2, printWidth: 100,
@@ -125,8 +116,8 @@ test('Prettier shares the agreed formatting across web and master through the re
     assert.match(invalid.stderr, /SyntaxError/);
   }
   for (const file of ['apps/mobile/lib/main.dart', 'apps/mobile/pubspec.yaml',
-    'apps/web/dist/fixture.js', 'apps/master/coverage/fixture.js',
-    'apps/web/test-results/fixture.json', 'apps/master/playwright-report/fixture.html',
+    'apps/web/dist/fixture.js', 'apps/web/coverage/fixture.js',
+    'apps/web/test-results/fixture.json', 'apps/web/playwright-report/fixture.html',
     'pnpm-lock.yaml']) {
     const ignored = run(file, input);
     assert.equal(ignored.status, 0, ignored.stderr);

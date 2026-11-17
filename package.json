@@ -6,8 +6,8 @@
     "node": ">=24 <25"
   },
   "scripts": {
-    "format": "prettier --write apps/web apps/master packages/theme",
-    "format:check": "prettier --check apps/web apps/master packages/theme",
+    "format": "prettier --write apps/web packages/theme",
+    "format:check": "prettier --check apps/web packages/theme",
     "dev:web": "pnpm --filter @luckieverse/web dev",
     "build:web": "pnpm --filter @luckieverse/web build",
     "check:web": "pnpm --filter @luckieverse/web check",
@@ -19,11 +19,7 @@
     "build:android": "cd apps/mobile && flutter build apk",
     "build:ios:simulator": "cd apps/mobile && flutter build ios --simulator",
     "test:native:server": "pnpm build:web && node scripts/native-server.mjs",
-    "test:native": "cd apps/mobile && flutter test integration_test/webview_test.dart",
-    "dev:master": "pnpm --filter @luckieverse/master dev",
-    "build:master": "pnpm --filter @luckieverse/master build",
-    "check:master": "pnpm --filter @luckieverse/master check",
-    "test:e2e:master": "pnpm --filter @luckieverse/master test:e2e"
+    "test:native": "cd apps/mobile && flutter test integration_test/webview_test.dart"
   },
   "devDependencies": {
     "prettier": "3.10.1"

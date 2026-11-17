@@ -6,8 +6,7 @@ Flutter 앱(Android·iOS)이 React 화면을 WebView로 여는 모노레포야. 
 
 - `apps/mobile/`: 기존 Flutter 프로젝트, 플랫폼 호스트, 카운터 데모와 테스트.
 - `apps/web/`: React + TypeScript + Vite, 통신 예제와 브라우저 테스트.
-- `apps/master/`: 독립적인 관리자 웹앱. 현재는 관리 콘솔 빈 화면이며 인증·업무 기능은 아직 없어.
-- `packages/theme/`: master·web이 함께 사용하는 Tailwind 초기화와 디자인 토큰.
+- `packages/theme/`: web이 사용하는 Tailwind 초기화와 디자인 토큰.
 - `docs/bridge.md`: URL 정책과 React ↔ Flutter 메시지 계약.
 - `docs/verification.md`: 요구사항·테스트 시나리오와 검증 범위.
 - `scripts/`: 구조 검사와 로컬 네이티브 테스트 서버.
@@ -26,7 +25,7 @@ pnpm dev:web
 
 웹 개발 서버는 `http://127.0.0.1:5173`을 사용해. 포트가 사용 중이면 자동으로 바꾸지 않고 실패해.
 
-master는 `pnpm dev:master`로 실행하며 `http://127.0.0.1:5175`를 사용해. 두 앱의 화면·컴포넌트·브리지·환경변수는 분리하고, Tailwind 설정·토큰만 공통 패키지로 공유해. 앱별 `.env.local`을 사용하며, `VITE_` 환경변수는 브라우저에 노출되므로 비밀 값을 넣지 않아.
+앱별 `.env.local`을 사용하며, `VITE_` 환경변수는 브라우저에 노출되므로 비밀 값을 넣지 않아.
 
 ## 라이브러리 버전 관리
 
@@ -36,13 +35,13 @@ master는 `pnpm dev:master`로 실행하며 `http://127.0.0.1:5175`를 사용해
 - 스타일: `@luckieverse/theme`의 `packages/theme/theme.css`에서 Tailwind 초기화(Preflight 포함)와 `@theme` 토큰을 공통 관리해. 각 앱의 `src/style.css`는 이 패키지를 가져오고 `@source "../"`로 해당 앱만 탐색해. Vite 플러그인 등록은 앱별 설정에 유지해.
 - 개발: TypeScript, Vite·React 플러그인, ESLint·typescript-eslint, Playwright, Vitest, React·Node 타입 패키지.
 
-공통 토큰은 `bg-surface`(흰 배경), `text-content`(검정 글자), `font-sans`(시스템 폰트), `p-4`·`gap-2`(4px 기본 간격 단위)로 사용할 수 있어. 토큰을 바꾸려면 `packages/theme/theme.css`의 `@theme`만 수정해. 변경은 양쪽 앱에 반영되므로 두 앱의 검사·E2E·빌드를 실행해. 앱별 클래스 탐색 범위는 확장하지 않아.
+공통 토큰은 `bg-surface`(흰 배경), `text-content`(검정 글자), `font-sans`(시스템 폰트), `p-4`·`gap-2`(4px 기본 간격 단위)로 사용할 수 있어. 토큰을 바꾸려면 `packages/theme/theme.css`의 `@theme`만 수정해. 변경 후 web의 검사·E2E·빌드를 실행해. 앱별 클래스 탐색 범위는 확장하지 않아.
 
-MSW와 React Router는 설치하지 않아. TanStack Router 패키지명은 `@tanstack/react-router`야. 라이브러리는 설치만 되어 있고 라우트·QueryClient·폼·store·API 클라이언트는 기능을 구현할 때 앱별로 구성해. master에는 아직 단위 테스트가 없어 Vitest 실행 명령은 추가하지 않았어.
+MSW와 React Router는 설치하지 않아. TanStack Router 패키지명은 `@tanstack/react-router`야. 라이브러리는 설치만 되어 있고 라우트·QueryClient·폼·store·API 클라이언트는 기능을 구현할 때 앱별로 구성해.
 
 TypeScript는 현재 `typescript-eslint`의 지원 범위(`>=4.8.4 <6.1.0`)에 맞춰 6.0.3을 사용해. TypeScript 7 전환은 린터 지원 이후 진행하고, `@types/node`는 실행 환경과 같은 Node 24 계열 최신을 사용해. [지원 범위](https://typescript-eslint.io/users/dependency-versions/)
 
-공통 버전을 바꾼 뒤 `pnpm install`로 잠금 파일을 갱신하고 두 앱의 검사·E2E·빌드를 실행해. catalog는 버전 관리 기능이며 실행 중인 상태나 배포 번들을 공유하지 않아. [pnpm Catalogs](https://pnpm.io/catalogs)
+공통 버전을 바꾼 뒤 `pnpm install`로 잠금 파일을 갱신하고 web의 검사·E2E·빌드를 실행해. catalog는 버전 관리 기능이며 실행 중인 상태나 배포 번들을 공유하지 않아. [pnpm Catalogs](https://pnpm.io/catalogs)
 
 ## Flutter 로컬 실행
 
@@ -62,15 +61,12 @@ HTTP는 debug 빌드의 localhost·사설 IP에서만 허용해. profile/release
 
 ```sh
 pnpm build:web
-pnpm build:master
 # apps/web/dist를 HTTPS 정적 호스팅에 배포한 뒤 해당 URL을 주입
 pnpm build:android --dart-define=WEB_APP_URL=https://your-domain.example
 pnpm build:ios:simulator --dart-define=WEB_APP_URL=https://your-domain.example
 ```
 
 웹 호스팅에는 SPA 경로를 `index.html`로 연결하도록 설정해. 실제 호스팅·스토어 배포는 포함하지 않아. 앱 ID와 기존 Android debug 서명 설정은 유지하므로 배포용 서명 설정은 별도로 필요해. 환경 주소는 비밀 저장소가 아니므로 토큰을 URL이나 `dart-define`에 넣지 않아.
-
-master는 `apps/master/dist`를 별도 호스팅에 배포해. Flutter의 `WEB_APP_URL`은 기존 사용자 웹서비스를 계속 가리키며 master와 연결하지 않아. 현재 master에는 접근 제어가 없으므로 실제 관리 API·데이터를 연결할 때 인증·서버 권한 검사를 먼저 구성해야 해.
 
 기본 화면은 WebView이며, 앱바의 **카운터 데모**에서 기존 Flutter 예제를 사용할 수 있어. React의 **앱 연결 확인** 버튼은 Android/iOS의 `pong`을 표시하고, 일반 브라우저에서는 비활성화돼. 다른 origin과 외부 앱 링크는 차단하며 로그인·카메라·푸시 기능은 아직 없어.
 
@@ -79,10 +75,8 @@ master는 `apps/master/dist`를 별도 호스팅에 배포해. Flutter의 `WEB_A
 ```sh
 pnpm test:workspace
 pnpm check:web
-pnpm check:master
 pnpm --filter @luckieverse/web exec playwright install chromium
 pnpm test:e2e
-pnpm test:e2e:master
 pnpm check:mobile
 ```
 
@@ -94,4 +88,4 @@ pnpm test:native -d <android-device-id> --dart-define=WEB_APP_URL=http://10.0.2.
 pnpm test:native -d <ios-device-id> --dart-define=WEB_APP_URL=http://127.0.0.1:5174
 ```
 
-브라우저 E2E의 네이티브 채널은 mock이야. 실제 WebView 통신은 Flutter 통합 테스트로 따로 확인하고, emulator/simulator 결과를 물리 기기·운영 서버 확인으로 간주하지 않아. Flutter 호스트와 WebView 지원 대상은 Android·iOS야. 웹은 별도의 React 프로젝트인 `apps/web/`와 `apps/master/`에서 제공해.
+브라우저 E2E의 네이티브 채널은 mock이야. 실제 WebView 통신은 Flutter 통합 테스트로 따로 확인하고, emulator/simulator 결과를 물리 기기·운영 서버 확인으로 간주하지 않아. Flutter 호스트와 WebView 지원 대상은 Android·iOS야. 웹은 별도의 React 프로젝트인 `apps/web/`에서 제공해.

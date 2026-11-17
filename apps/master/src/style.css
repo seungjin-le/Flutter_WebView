@@ -1,3 +1,206 @@
-@import "@luckieverse/theme";
+@import '@luckieverse/theme';
 
 @source "../";
+
+@theme {
+  /* Font: Noto Sans KR first, system fallbacks kept from the shared theme */
+  --font-sans:
+    'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue',
+    'Noto Sans', Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+    'Noto Color Emoji';
+
+  /* Brand blue (primary actions, selection) */
+  --color-primary: #2563eb;
+  --color-primary-hover: #1d4ed8;
+  --color-primary-soft: #eff6ff;
+  --color-primary-soft-border: #dbeafe;
+  --color-primary-soft-border-strong: #bfdbfe;
+  --color-primary-light: #93c5fd;
+  --color-ring: #60a5fa;
+
+  /* Neutral text, surfaces and borders used inside components */
+  --color-foreground: #0a0a0a;
+  --color-accent-foreground: #171717;
+  --color-neutral-700: #404040;
+  --color-muted-foreground: #737373;
+  --color-placeholder: #a3a3a3;
+  --color-muted: #f5f5f5;
+  --color-subtle: #fafafa;
+  --color-border: #e5e5e5;
+  --color-input-strong: #d4d4d4;
+
+  /* Destructive (red) */
+  --color-destructive: #e7000b;
+  --color-destructive-foreground: #c10007;
+
+  /* App shell (zinc) used by Main/Sidebar */
+  --color-shell-foreground: #09090b;
+  --color-shell-strong: #18181b;
+  --color-shell-muted-strong: #3f3f46;
+  --color-shell-muted: #71717a;
+  --color-shell-border: #e4e4e7;
+  --color-shell-hover: #f4f4f5;
+
+  --color-shell-ring: #a1a1aa;
+
+  /* Design default easing for every transition utility */
+  --default-transition-timing-function: ease;
+
+  /* Shadows */
+  --shadow-control: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-popover: 0 0 0 1px rgb(0 0 0 / 0.1), 0 4px 6px -1px rgb(0 0 0 / 0.1);
+
+  /* Animations shared by popovers, dialogs, skeleton and spinner */
+  --animate-popover-in: popover-in 0.15s ease;
+  --animate-popover-out: popover-out 0.15s ease forwards;
+  --animate-fade-in: fade-in 0.1s ease;
+  --animate-fade-out: fade-out 0.1s ease forwards;
+  --animate-dialog-in: dialog-in 0.1s ease;
+  --animate-dialog-out: dialog-out 0.1s ease forwards;
+  --animate-skeleton: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-spinner: spinner-spin 1s linear infinite;
+  --animate-sb-pop-in: sb-pop-in 0.15s ease;
+  --animate-sb-pop-out: sb-pop-out 0.15s ease forwards;
+  --animate-sb-pop-in-side: sb-pop-in-side 0.15s ease;
+  --animate-sb-pop-out-side: sb-pop-out-side 0.15s ease forwards;
+  --animate-upload-shimmer: upload-shimmer 1.6s linear infinite;
+
+  @keyframes popover-in {
+    from {
+      opacity: 0;
+      transform: translateY(-8px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes popover-out {
+    from {
+      opacity: 1;
+      transform: none;
+    }
+    to {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes fade-out {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+  /* Centered dialog: translate(-50%, -50%) is part of the animation */
+  @keyframes dialog-in {
+    from {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+  }
+  @keyframes dialog-out {
+    from {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+    to {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.95);
+    }
+  }
+  @keyframes skeleton-pulse {
+    50% {
+      opacity: 0.5;
+    }
+  }
+  @keyframes spinner-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  /* Sidebar account menu: rises from below, side variant when collapsed */
+  @keyframes sb-pop-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes sb-pop-out {
+    from {
+      opacity: 1;
+      transform: none;
+    }
+    to {
+      opacity: 0;
+      transform: translateY(8px) scale(0.95);
+    }
+  }
+  @keyframes sb-pop-in-side {
+    from {
+      opacity: 0;
+      transform: translateX(-8px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes sb-pop-out-side {
+    from {
+      opacity: 1;
+      transform: none;
+    }
+    to {
+      opacity: 0;
+      transform: translateX(-8px) scale(0.95);
+    }
+  }
+  @keyframes upload-shimmer {
+    from {
+      background-position: 100% 0;
+    }
+    to {
+      background-position: -100% 0;
+    }
+  }
+}
+
+/* Reduced motion: overlays and skeleton stop animating, spinner keeps turning slowly (artboards) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+  }
+  .animate-popover-in,
+  .animate-popover-out,
+  .animate-fade-in,
+  .animate-fade-out,
+  .animate-dialog-in,
+  .animate-dialog-out,
+  .animate-skeleton,
+  [class*='animate-sb-pop'] {
+    animation: none !important;
+  }
+  .animate-spinner {
+    animation-duration: 3s;
+  }
+}

@@ -79,6 +79,19 @@ void main() {
     });
   }
 
+  Future<void> goBack(WidgetTester tester, WebViewController controller) async {
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      expect(
+        await controller.canGoBack(),
+        isTrue,
+        reason: 'Expected WebView history before native back',
+      );
+      await tester.binding.handlePopRoute();
+    } else {
+      await controller.goBack();
+    }
+  }
+
   testWidgets('home feed snaps to a ready iframe and keeps navigation fixed', (
     tester,
   ) async {
@@ -156,16 +169,7 @@ void main() {
             (await controller.currentUrl())?.endsWith('#section') == true &&
             await controller.canGoBack(),
       );
-      if (defaultTargetPlatform == TargetPlatform.android) {
-        expect(
-          await controller.canGoBack(),
-          isTrue,
-          reason: 'Expected WebView history before native back',
-        );
-        await tester.binding.handlePopRoute();
-      } else {
-        await controller.goBack();
-      }
+      await goBack(tester, controller);
       await waitUntil(
         tester,
         () async =>
@@ -189,16 +193,7 @@ void main() {
       );
       await tester.pump(const Duration(seconds: 1));
       expect((await controller.currentUrl())?.endsWith('/next'), isTrue);
-      if (defaultTargetPlatform == TargetPlatform.android) {
-        expect(
-          await controller.canGoBack(),
-          isTrue,
-          reason: 'Expected WebView history before native back',
-        );
-        await tester.binding.handlePopRoute();
-      } else {
-        await controller.goBack();
-      }
+      await goBack(tester, controller);
       await waitUntil(
         tester,
         () async =>
@@ -212,12 +207,7 @@ void main() {
           tester,
           () async => find.text('다시 시도').evaluate().isNotEmpty,
         );
-        expect(
-          await controller.canGoBack(),
-          isTrue,
-          reason: 'Expected WebView history before native back',
-        );
-        await tester.binding.handlePopRoute();
+        await goBack(tester, controller);
         await waitUntil(
           tester,
           () async =>

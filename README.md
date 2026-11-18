@@ -92,6 +92,8 @@ pnpm build:ios:simulator --dart-define=WEB_APP_URL=https://your-domain.example
 
 기본 화면은 WebView이며, 앱바의 **카운터 데모**에서 기존 Flutter 예제를 사용할 수 있어. 웹 홈 `/`은 세로로 넘기는 iframe 피드야. 실제 콘텐츠와 에셋은 `dist/feed/`에서 정적 파일로 제공해. `/connection`의 **앱 연결 확인** 버튼은 Android/iOS의 `pong`을 표시하고, 일반 브라우저에서는 비활성화돼. 다른 origin과 외부 앱 링크는 차단하며 로그인·카메라·푸시 기능은 아직 없어.
 
+래플 상세(`/benefits/raffles/r1`, `/benefits/raffles/r2`), 클로버 내역(`/benefits/history`), 프로필 설정(`/profile/settings`)은 직접 열거나 새로고침할 수 있어. 앱 안에서 열면 뒤로가기로 보던 목록이나 메뉴에 복귀해. 직접 접속하거나 새로고침한 뒤 화면의 뒤로 버튼을 누르면 혜택 또는 프로필 탭으로 돌아가.
+
 ## 임시 프로토타입과 삭제 시점
 
 홈·탐색·혜택·프로필은 LuckyBusTap 프로토타입의 디자인과 조작을 확인하기 위한 임시 화면이야. **각 탭에 정식 디자인과 콘텐츠를 적용할 때 해당 복제 자료와 전용 코드를 삭제해.**
@@ -101,7 +103,7 @@ pnpm build:ios:simulator --dart-define=WEB_APP_URL=https://your-domain.example
 - `apps/web/src/router.tsx`의 임시 피드 쿼리(`feed`, `play`, `view`)와 `.prettierignore`, `apps/web/eslint.config.js`, `apps/web/src/style.css`의 `public/feed` 전용 예외도 함께 제거해.
 - `apps/web/e2e/home-feed.spec.ts`, `apps/web/e2e/feed-card.spec.ts`와 `apps/mobile/integration_test/webview_test.dart`에서 예시 카드와 복제 콘텐츠에 의존하는 검사를 정식 콘텐츠 기준으로 교체해. `apps/web/e2e/bottom-nav.spec.ts`에서도 임시 홈 제목과 스크롤 영역에 의존하는 단언만 갱신해. 하단 메뉴의 아이콘·색상과 데스크톱 화면 프레임 치수도 정식 디자인에 맞춰 교체해.
 - 탐색·혜택·프로필은 `apps/web/public/prototype-tabs/index.html`을 하나의 iframe으로 공유해. 출석·클로버·닉네임 변경은 현재 페이지를 새로고침할 때까지 유지되는 예시 데이터야. 세 탭을 모두 교체하면 `apps/web/public/prototype-tabs/`와 `apps/web/src/features/prototype-tabs/`를 삭제하고 배포본의 `dist/prototype-tabs/`도 정리해.
-- 이때 `router.tsx`의 iframe 연결, 홈 플레이어의 `fromPrototypePlayer` 복귀 처리와 피드 활동을 미션·도감에 전달하는 임시 연동, `style.css`와 `.prettierignore`의 임시 탭 전용 규칙을 제거해. `prototype-shell.spec.ts`, `prototype-tabs.spec.ts`, `prototype-activity.spec.ts`의 검사는 정식 화면 기준으로 교체해.
+- 정식 화면도 위의 상세 주소를 사용해. 교체할 때는 `router.tsx`의 iframe 연결, 홈 플레이어의 `fromPrototypePlayer` 복귀 처리와 피드 활동을 미션·도감에 전달하는 임시 연동, `style.css`와 `.prettierignore`의 임시 탭 전용 규칙을 제거해. `prototype-shell.spec.ts`, `prototype-tabs.spec.ts`, `prototype-activity.spec.ts`, `detail-routes.spec.ts`에서 복제 화면에 의존하는 검사는 정식 화면 기준으로 교체해.
 
 ## 검증
 

@@ -3,7 +3,7 @@ import App from './App'
 import { BottomNav } from './components/layout/BottomNav'
 import { HomeFeedPage } from './features/home/HomeFeedPage'
 import { PrototypeTabs } from './features/prototype-tabs/PrototypeTabs'
-import { pagePaths } from './page-paths'
+import { detailSegments, pagePaths } from './page-paths'
 
 const rootRoute = createRootRoute({
   component: () => (
@@ -18,6 +18,8 @@ const rootRoute = createRootRoute({
 })
 
 const getParentRoute = () => rootRoute
+const benefitsRoute = createRoute({ getParentRoute, path: pagePaths.benefits })
+const profileRoute = createRoute({ getParentRoute, path: pagePaths.profile })
 const routeTree = rootRoute.addChildren([
   createRoute({
     getParentRoute,
@@ -33,14 +35,20 @@ const routeTree = rootRoute.addChildren([
   }),
   createRoute({ getParentRoute, path: '/connection', component: App }),
   createRoute({ getParentRoute, path: pagePaths.explore }),
-  createRoute({ getParentRoute, path: pagePaths.benefits }),
-  createRoute({ getParentRoute, path: pagePaths.profile }),
+  benefitsRoute.addChildren([
+    createRoute({ getParentRoute: () => benefitsRoute, path: detailSegments.raffle }),
+    createRoute({ getParentRoute: () => benefitsRoute, path: detailSegments.history }),
+  ]),
+  profileRoute.addChildren([
+    createRoute({ getParentRoute: () => profileRoute, path: detailSegments.settings }),
+  ]),
 ])
 
 export const router = createRouter({ routeTree })
 
 declare module '@tanstack/react-router' {
   interface HistoryState {
+    prototypeDocumentTimeOrigin?: number
     fromPrototypePlayer?: boolean
   }
   interface Register {

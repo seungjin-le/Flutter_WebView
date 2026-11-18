@@ -38,10 +38,10 @@ const items = [
 
 export const BottomNav = () => {
   // Hooks
-  const isHome = useRouterState({ select: (state) => state.location.pathname === pagePaths.home })
+  const pathname = useRouterState({ select: (state) => state.location.pathname })
 
   return (
-    <nav aria-label="하단 메뉴" className="bottom-nav" data-home={isHome}>
+    <nav aria-label="하단 메뉴" className="bottom-nav" data-home={pathname === pagePaths.home}>
       {items.map(({ label, to, icon }) => {
         const isCreate = to === null
         const content = (
@@ -72,10 +72,10 @@ export const BottomNav = () => {
           <Link
             key={to}
             to={to}
-            activeOptions={{ exact: true, includeSearch: false }}
+            activeOptions={{ exact: to === pagePaths.home, includeSearch: false }}
             onClick={(event) => {
               if (
-                event.currentTarget.getAttribute('aria-current') === 'page' &&
+                pathname === to &&
                 !event.metaKey &&
                 !event.ctrlKey &&
                 !event.shiftKey &&

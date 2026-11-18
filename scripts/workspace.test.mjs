@@ -6,18 +6,16 @@ import { dirname, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 test('The web app can resolve the requested libraries without MSW or React Router', () => {
-  for (const app of ['web']) {
-    const require = createRequire(resolve(`apps/${app}/package.json`));
-    const manifest = require('./package.json');
-    assert.equal(require.resolve('@luckieverse/theme'), resolve('packages/theme/theme.css'));
-    for (const name of ['@tanstack/react-query', '@tanstack/react-router', 'zod',
-      'react-hook-form', '@hookform/resolvers/zod', 'zustand', 'axios', 'date-fns',
-      'tailwindcss', '@tailwindcss/vite', 'vitest']) {
-      assert.ok(require.resolve(name), `${app}: ${name}`);
-    }
-    for (const name of ['msw', 'react-router', 'react-router-dom']) {
-      assert.equal(manifest.dependencies[name] ?? manifest.devDependencies[name], undefined);
-    }
+  const require = createRequire(resolve('apps/web/package.json'));
+  const manifest = require('./package.json');
+  assert.equal(require.resolve('@luckieverse/theme'), resolve('packages/theme/theme.css'));
+  for (const name of ['@tanstack/react-query', '@tanstack/react-router', 'zod',
+    'react-hook-form', '@hookform/resolvers/zod', 'zustand', 'axios', 'date-fns',
+    'tailwindcss', '@tailwindcss/vite', 'vitest']) {
+    assert.ok(require.resolve(name), `web: ${name}`);
+  }
+  for (const name of ['msw', 'react-router', 'react-router-dom']) {
+    assert.equal(manifest.dependencies[name] ?? manifest.devDependencies[name], undefined);
   }
 });
 
@@ -98,23 +96,21 @@ test('Prettier shares the agreed formatting for web through the real CLI', async
   const run = (file, source) => spawnSync(process.execPath, [bin, '--stdin-filepath', file], {
     input: source, encoding: 'utf8', timeout: 10000,
   });
-  for (const app of ['web']) {
-    const file = `apps/${app}/src/prettier-fixture.tsx`;
-    assert.deepEqual(await prettier.resolveConfig(file), {
-      semi: false, singleQuote: true, tabWidth: 2, printWidth: 100,
-      trailingComma: 'all', endOfLine: 'lf',
-    });
-    const formatted = run(file, input);
-    assert.equal(formatted.status, 0, formatted.stderr);
-    assert.equal(formatted.stdout, expected);
-    assert.equal(run(file, expected).stdout, expected, 'Formatting must be idempotent');
-    const empty = run(file, '');
-    assert.equal(empty.status, 0, empty.stderr);
-    assert.equal(empty.stdout, '');
-    const invalid = run(file, 'export const Card = (');
-    assert.equal(invalid.status, 2, invalid.stderr);
-    assert.match(invalid.stderr, /SyntaxError/);
-  }
+  const file = 'apps/web/src/prettier-fixture.tsx';
+  assert.deepEqual(await prettier.resolveConfig(file), {
+    semi: false, singleQuote: true, tabWidth: 2, printWidth: 100,
+    trailingComma: 'all', endOfLine: 'lf',
+  });
+  const formatted = run(file, input);
+  assert.equal(formatted.status, 0, formatted.stderr);
+  assert.equal(formatted.stdout, expected);
+  assert.equal(run(file, expected).stdout, expected, 'Formatting must be idempotent');
+  const empty = run(file, '');
+  assert.equal(empty.status, 0, empty.stderr);
+  assert.equal(empty.stdout, '');
+  const invalid = run(file, 'export const Card = (');
+  assert.equal(invalid.status, 2, invalid.stderr);
+  assert.match(invalid.stderr, /SyntaxError/);
   for (const file of ['apps/mobile/lib/main.dart', 'apps/mobile/pubspec.yaml',
     'apps/web/dist/fixture.js', 'apps/web/coverage/fixture.js',
     'apps/web/test-results/fixture.json', 'apps/web/playwright-report/fixture.html',

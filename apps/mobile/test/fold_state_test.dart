@@ -64,8 +64,7 @@ void main() {
       'unsubscribeFoldState',
     ]) {
       final message = jsonEncode({'version': 1, 'id': 'doc:1', 'type': type});
-      expect(foldRequestFor(message)?.id, 'doc:1');
-      expect(foldRequestFor(message)?.type, type);
+      expect(parseBridgeRequest(message), (id: 'doc:1', type: type));
     }
     for (final message in [
       'null',
@@ -81,7 +80,7 @@ void main() {
       jsonEncode({'version': 1, 'id': 'x' * 129, 'type': 'getFoldState'}),
       ' ' * 4097,
     ]) {
-      expect(foldRequestFor(message), isNull, reason: message);
+      expect(parseBridgeRequest(message), isNull, reason: message);
     }
     const id = "');throw new Error('bad')//";
     final script = foldStateScript(id, FoldState.unknown('ios'));

@@ -68,26 +68,21 @@ void main() {
   });
   group('Native ping contract', () {
     test('serializes ID and platform safely into a pong event', () {
-      final message = jsonEncode({
-        'version': 1,
-        'id': 'test-1',
-        'type': 'ping',
-      });
-      expect(
-        pongScriptFor(message, 'android'),
-        contains('luckieverse:response'),
-      );
-      expect(pongScriptFor(message, 'ios'), contains('"platform":"ios"'));
-      expect(pongScriptFor(message, 'windows'), isNull);
-      final hostile = jsonEncode({
-        'version': 1,
-        'id': "');throw new Error('oops')//",
-        'type': 'ping',
-      });
-      expect(
-        pongScriptFor(hostile, 'ios'),
-        contains(jsonEncode("');throw new Error('oops')//")),
-      );
+      const id = "');throw new Error('oops')//";
+      final message = jsonEncode({'version': 1, 'id': id, 'type': 'ping'});
+      expect(parseBridgeRequest(message), (id: id, type: 'ping'));
+      final android = pongScript(id, 'android');
+      expect(android, contains('luckieverse:response'));
+      expect(android, contains(jsonEncode(id)));
+      expect(android, contains('"platform":"android"'));
+      expect(pongScript(id, 'ios'), contains('"platform":"ios"'));
+    });
+    test('accepts the exact ID and message length limits', () {
+      final id = 'x' * 128;
+      final message = jsonEncode({'version': 1, 'id': id, 'type': 'ping'});
+      final limit = message.padRight(4096);
+      expect(parseBridgeRequest(limit), (id: id, type: 'ping'));
+      expect(parseBridgeRequest('$limit '), isNull);
     });
     test(
       'rejects invalid JSON, null, falsy, unsupported versions and types',
@@ -108,7 +103,7 @@ void main() {
           '{"version":1,"id":"a","type":"other"}',
           jsonEncode({'version': 1, 'id': 'x' * 129, 'type': 'ping'}),
         ]) {
-          expect(pongScriptFor(message, 'ios'), isNull, reason: message);
+          expect(parseBridgeRequest(message), isNull, reason: message);
         }
       },
     );

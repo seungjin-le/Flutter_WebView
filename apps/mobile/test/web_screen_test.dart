@@ -50,6 +50,26 @@ void main() {
     },
   );
 
+  testWidgets('missing URL keeps configuration instructions if back fails', (
+    tester,
+  ) async {
+    final messenger = tester.binding.defaultBinaryMessenger;
+    messenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      if (call.method == 'SystemNavigator.pop') {
+        throw PlatformException(code: 'unavailable');
+      }
+      return null;
+    });
+    addTearDown(
+      () => messenger.setMockMethodCallHandler(SystemChannels.platform, null),
+    );
+    await tester.pumpWidget(const MyApp(webAppUrl: ''));
+    await tester.binding.handlePopRoute();
+    await tester.pump();
+    expect(find.text('웹 주소가 설정되지 않았어'), findsOneWidget);
+    expect(find.text('다시 시도'), findsNothing);
+  });
+
   const splashLabel = 'Luckieverse 불러오는 중';
   Future<void> finishLoad(WidgetTester tester) async {
     platform.delegate.finished?.call('https://example.com');
@@ -398,6 +418,24 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
+  testWidgets('unsupported platforms do not receive a ping reply', (
+    tester,
+  ) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.windows;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+    await start(tester);
+    platform.controller.channel?.onMessageReceived(
+      const JavaScriptMessage(message: '{"version":1,"id":"a","type":"ping"}'),
+    );
+    await tester.pump();
+    expect(
+      platform.controller.operations.where(
+        (op) => op.contains('luckieverse:response'),
+      ),
+      isEmpty,
+    );
+    await tester.pumpWidget(const SizedBox());
+  });
   testWidgets(
     'HTTP failure before page-start remains visible until explicit retry',
     (tester) async {

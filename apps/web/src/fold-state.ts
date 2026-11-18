@@ -15,7 +15,6 @@ let sequence = 0
 let subscriptionId: string | undefined
 let subscriptionTimer: ReturnType<typeof setTimeout> | undefined
 let snapshot: FoldState | undefined
-let listening = false
 let suspended = false
 const nextId = () => `${documentId}:fold:${++sequence}`
 const toError = (error: unknown) => error instanceof Error ? error : new Error('기기 상태 연결에 실패했어.')
@@ -27,16 +26,13 @@ function post(type: string, id: string) {
 }
 
 function listen() {
-  if (listening) return
-  listening = true
   window.addEventListener('luckieverse:response', receive)
   window.addEventListener('pagehide', suspend)
   window.addEventListener('pageshow', resume)
 }
 
 function cleanup() {
-  if (!listening || suspended || pending.size > 0 || subscribers.size > 0) return
-  listening = false
+  if (suspended || pending.size > 0 || subscribers.size > 0) return
   window.removeEventListener('luckieverse:response', receive)
   window.removeEventListener('pagehide', suspend)
   window.removeEventListener('pageshow', resume)

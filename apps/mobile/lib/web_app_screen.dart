@@ -250,26 +250,23 @@ class WebAppScreenState extends State<WebAppScreen> {
   Future<void> _receive(WebViewController controller, String message) async {
     final base = _base;
     final platform = defaultTargetPlatform.name.toLowerCase();
-    final pongScript = pongScriptFor(message, platform);
-    final foldRequest = foldRequestFor(message);
+    final request = parseBridgeRequest(message);
     if (!_isCurrent(controller) ||
         base == null ||
         _error != null ||
-        (pongScript == null && foldRequest == null) ||
+        request == null ||
         (platform != 'ios' && platform != 'android')) {
       return;
     }
     final generation = _generation;
-    final subscribing = foldRequest?.type == 'subscribeFoldState';
-    if (foldRequest != null) {
-      if (subscribing) {
-        _foldRequestedId = foldRequest.id;
-        _foldCommandVersion++;
-      } else if (foldRequest.type == 'unsubscribeFoldState' &&
-          _foldRequestedId == foldRequest.id) {
-        _foldRequestedId = null;
-        _foldCommandVersion++;
-      }
+    final subscribing = request.type == 'subscribeFoldState';
+    if (subscribing) {
+      _foldRequestedId = request.id;
+      _foldCommandVersion++;
+    } else if (request.type == 'unsubscribeFoldState' &&
+        _foldRequestedId == request.id) {
+      _foldRequestedId = null;
+      _foldCommandVersion++;
     }
     final foldCommand = _foldCommandVersion;
     try {
@@ -282,22 +279,16 @@ class WebAppScreenState extends State<WebAppScreen> {
           !isAllowedNavigation(base, current)) {
         return;
       }
-      if (pongScript != null) {
-        await controller.runJavaScript(pongScript);
-      } else if (foldRequest != null) {
-        if (foldRequest.type == 'unsubscribeFoldState') {
-          if (_foldSubscriptionId == foldRequest.id) _foldSubscriptionId = null;
-          return;
-        }
-        if (foldRequest.type == 'subscribeFoldState') {
-          _foldSubscriptionId = foldRequest.id;
-        }
-        await controller.runJavaScript(
-          foldStateScript(foldRequest.id, _foldState),
-        );
+      if (request.type == 'ping') {
+        await controller.runJavaScript(pongScript(request.id, platform));
+      } else if (request.type == 'unsubscribeFoldState') {
+        if (_foldSubscriptionId == request.id) _foldSubscriptionId = null;
+      } else {
+        if (subscribing) _foldSubscriptionId = request.id;
+        await controller.runJavaScript(foldStateScript(request.id, _foldState));
       }
     } catch (_) {
-      if (pongScript != null &&
+      if (request.type == 'ping' &&
           _isCurrent(controller) &&
           generation == _generation) {
         _fail('앱 연결에 실패했어. 화면을 다시 불러와 줘.');
@@ -351,7 +342,7 @@ class WebAppScreenState extends State<WebAppScreen> {
   @override
   Widget build(BuildContext context) {
     final controller = _controller;
-    final error = _error;
+    final loadError = _base == null ? null : _error;
     final showSplash = _splash && _base != null;
     return PopScope(
       canPop: false,
@@ -375,39 +366,32 @@ class WebAppScreenState extends State<WebAppScreen> {
                 ],
               ),
               body: SafeArea(
-                child: _base == null
-                    ? const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(24),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text('웹 주소가 설정되지 않았어'),
-                              SizedBox(height: 12),
-                              Text(
-                                '올바른 WEB_APP_URL로 앱을 실행해 줘.',
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ),
-                        ),
-                      )
-                    : error != null
+                child: _base == null || loadError != null
                     ? Center(
                         child: Padding(
                           padding: const EdgeInsets.all(24),
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(error, textAlign: TextAlign.center),
-                              const SizedBox(height: 16),
-                              FilledButton(
-                                onPressed: () {
-                                  unawaited(_initialize());
-                                },
-                                child: const Text('다시 시도'),
-                              ),
-                            ],
+                            children: loadError == null
+                                ? const [
+                                    Text('웹 주소가 설정되지 않았어'),
+                                    SizedBox(height: 12),
+                                    Text(
+                                      '올바른 WEB_APP_URL로 앱을 실행해 줘.',
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ]
+                                : [
+                                    Text(
+                                      loadError,
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const SizedBox(height: 16),
+                                    FilledButton(
+                                      onPressed: () => unawaited(_initialize()),
+                                      child: const Text('다시 시도'),
+                                    ),
+                                  ],
                           ),
                         ),
                       )

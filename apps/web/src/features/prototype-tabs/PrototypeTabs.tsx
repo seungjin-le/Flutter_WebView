@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useNavigate, useRouter, useRouterState } from '@tanstack/react-router'
-import { pagePaths } from '../../page-paths'
+import { detailPaths, pagePaths } from '../../page-paths'
 import { feedItems } from '../home/feed-catalog'
 import { setPrototypeGuest, subscribeHomeActivity } from './home-activity'
 
@@ -10,11 +10,23 @@ const isTab = (value: unknown): value is keyof typeof names =>
   value === 'explore' || value === 'benefits' || value === 'profile'
 
 export const PrototypeTabs = () => {
-  const pathname = useRouterState({ select: (state) => state.location.pathname })
   const router = useRouter()
-  const index = useRouterState({ select: (state) => state.location.state.__TSR_index })
+  const { pathname, state } = useRouterState({ select: (snapshot) => snapshot.location })
+  const index = state.__TSR_index
+  const entryKey = state.__TSR_key ?? String(index)
   const segment = pathname.split('/')[1]
-  const tab = isTab(segment) && pathname === pagePaths[segment] ? segment : 'inactive'
+  const [, params, route] = router.getMatchedRoutes(pathname)
+  const raffleId = route?.fullPath === detailPaths.raffle ? params.raffleId : undefined
+  const detail =
+    raffleId !== undefined
+      ? 'raffle'
+      : pathname === detailPaths.history
+        ? 'history'
+        : pathname === detailPaths.settings
+          ? 'settings'
+          : null
+  const tab =
+    isTab(segment) && (pathname === pagePaths[segment] || detail !== null) ? segment : 'inactive'
   const active = tab !== 'inactive'
   const navigate = useNavigate()
   const frame = useRef<HTMLIFrameElement>(null)
@@ -49,6 +61,51 @@ export const PrototypeTabs = () => {
         setFullTab(message.full ? tab : null)
         return
       }
+      if (message?.type === 'prototype-detail') {
+        const options = {
+          state: { prototypeDocumentTimeOrigin: performance.timeOrigin },
+          resetScroll: false,
+        }
+        if (
+          message.detail === 'raffle' &&
+          typeof message.raffleId === 'string' &&
+          /^r[0-9]+$/.test(message.raffleId)
+        ) {
+          if (message.raffleId !== raffleId) {
+            void navigate({
+              ...options,
+              to: detailPaths.raffle,
+              params: { raffleId: message.raffleId },
+            })
+          }
+        } else if (message.detail === 'history' || message.detail === 'settings') {
+          const next: 'history' | 'settings' = message.detail
+          if (detail !== next) void navigate({ ...options, to: detailPaths[next] })
+        }
+        return
+      }
+      if (detail && message?.type === 'prototype-detail-back') {
+        if (
+          state.prototypeDocumentTimeOrigin === performance.timeOrigin &&
+          router.history.canGoBack()
+        ) {
+          router.history.back()
+        } else {
+          void navigate({
+            to: detail === 'settings' ? pagePaths.profile : pagePaths.benefits,
+            replace: true,
+          })
+        }
+        return
+      }
+      if (
+        detail === 'raffle' &&
+        message?.type === 'prototype-invalid-raffle' &&
+        message.raffleId === raffleId
+      ) {
+        void navigate({ to: pagePaths.benefits, replace: true })
+        return
+      }
       if (message?.type === 'prototype-cancel') {
         const previous = lastPublicTab.current
         if (tab === 'explore' || message.tab !== previous.tab) return
@@ -79,7 +136,18 @@ export const PrototypeTabs = () => {
     }
     window.addEventListener('message', receive)
     return () => window.removeEventListener('message', receive)
-  }, [active, index, navigate, pathname, router, status, tab])
+  }, [
+    active,
+    detail,
+    index,
+    navigate,
+    pathname,
+    raffleId,
+    router,
+    state.prototypeDocumentTimeOrigin,
+    status,
+    tab,
+  ])
 
   useEffect(() => {
     if (status !== 'ready') return
@@ -90,13 +158,16 @@ export const PrototypeTabs = () => {
           type: 'prototype-tab',
           tab: document.hidden ? 'inactive' : tab,
           returnTab: lastPublicTab.current.tab,
+          detail,
+          raffleId,
+          entryKey,
         },
         '*',
       )
     sync()
     document.addEventListener('visibilitychange', sync)
     return () => document.removeEventListener('visibilitychange', sync)
-  }, [status, tab])
+  }, [detail, entryKey, raffleId, status, tab])
 
   useEffect(() => {
     if (status !== 'ready' || !frame.current?.contentWindow) return

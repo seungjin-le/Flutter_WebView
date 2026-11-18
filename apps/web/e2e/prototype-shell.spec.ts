@@ -89,3 +89,34 @@ test('gives profile editing the full prototype frame and restores the tab bar on
   await app.getByRole('button', { name: '저장', exact: true }).click()
   await expect(page.getByRole('navigation', { name: '하단 메뉴' })).toBeVisible()
 })
+
+test('the host owns detail history and ignores requests from other windows', async ({ page }) => {
+  await page.route(route, (r) => r.fulfill({ contentType: 'text/html', body: fixture }))
+  await page.goto('/benefits')
+  const child = page.frameLocator(frame).locator('body')
+  await expect(child).toHaveAttribute('data-tab', 'benefits')
+  await page.evaluate(() =>
+    window.postMessage({ type: 'prototype-detail', detail: 'history' }, window.origin),
+  )
+  await child.evaluate(() => {
+    parent.postMessage(
+      { type: 'prototype-detail', detail: 'raffle', raffleId: '../profile' },
+      new URL(document.URL).origin,
+    )
+    parent.postMessage(
+      { type: 'prototype-detail', detail: 'raffle', raffleId: 'r2' },
+      new URL(document.URL).origin,
+    )
+  })
+  await expect(page).toHaveURL(/\/benefits\/raffles\/r2$/)
+  await expect(page.getByRole('navigation').getByRole('link', { name: '혜택' })).toHaveAttribute(
+    'aria-current',
+    'page',
+  )
+  await child.evaluate(() =>
+    parent.postMessage({ type: 'prototype-detail-back' }, new URL(document.URL).origin),
+  )
+  await expect(page).toHaveURL(/\/benefits$/)
+  await page.goForward()
+  await expect(page).toHaveURL(/\/benefits\/raffles\/r2$/)
+})

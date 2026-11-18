@@ -1,8 +1,11 @@
 import 'package:material_ui/material_ui.dart';
 
+import 'social_login.dart';
 import 'web_app_screen.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await initializeKakao();
   runApp(const MyApp());
 }
 

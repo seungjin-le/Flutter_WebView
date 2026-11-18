@@ -4,6 +4,16 @@ import UIKit
 @testable import Runner
 
 struct RunnerTests {
+  @Test @MainActor func appHidesStatusBarAndKeepsHomeIndicator() throws {
+    let scene = try #require(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+      .first { $0.keyWindow?.rootViewController is FlutterViewController })
+    let controller = try #require(scene.keyWindow?.rootViewController)
+    #expect(Bundle.main.object(forInfoDictionaryKey: "UIStatusBarHidden") as? Bool == true)
+    #expect(controller.prefersStatusBarHidden)
+    #expect(scene.statusBarManager?.isStatusBarHidden == true)
+    #expect(!controller.prefersHomeIndicatorAutoHidden)
+  }
+
   @Test func unavailableHingeDoesNotInventADeviceOrPosture() {
     var state = FoldStateSnapshot()
     state.observe(nil)

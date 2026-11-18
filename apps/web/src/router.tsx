@@ -1,16 +1,15 @@
 import { createRootRoute, createRoute, createRouter, Outlet } from '@tanstack/react-router'
 import App from './App'
 import { BottomNav } from './components/layout/BottomNav'
-import { BenefitsPage } from './features/benefits/BenefitsPage'
-import { ExplorePage } from './features/explore/ExplorePage'
 import { HomeFeedPage } from './features/home/HomeFeedPage'
-import { ProfilePage } from './features/profile/ProfilePage'
+import { PrototypeTabs } from './features/prototype-tabs/PrototypeTabs'
 import { pagePaths } from './page-paths'
 
 const rootRoute = createRootRoute({
   component: () => (
     <>
       <Outlet />
+      <PrototypeTabs />
       <BottomNav />
     </>
   ),
@@ -33,14 +32,17 @@ const routeTree = rootRoute.addChildren([
     }),
   }),
   createRoute({ getParentRoute, path: '/connection', component: App }),
-  createRoute({ getParentRoute, path: pagePaths.explore, component: ExplorePage }),
-  createRoute({ getParentRoute, path: pagePaths.benefits, component: BenefitsPage }),
-  createRoute({ getParentRoute, path: pagePaths.profile, component: ProfilePage }),
+  createRoute({ getParentRoute, path: pagePaths.explore }),
+  createRoute({ getParentRoute, path: pagePaths.benefits }),
+  createRoute({ getParentRoute, path: pagePaths.profile }),
 ])
 
 export const router = createRouter({ routeTree })
 
 declare module '@tanstack/react-router' {
+  interface HistoryState {
+    fromPrototypePlayer?: boolean
+  }
   interface Register {
     router: typeof router
   }

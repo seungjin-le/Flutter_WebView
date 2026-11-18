@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react'
+import { recordHomeActivity } from '../prototype-tabs/home-activity'
 import type { FeedItem } from './feed-catalog'
 import './feed-card.css'
 
@@ -55,6 +56,7 @@ export const FeedCard = ({ item, cover, preview, onPlay }: FeedCardProps) => {
         await navigator.clipboard.writeText(url.href)
         setShareFeedback('링크를 복사했어')
       }
+      recordHomeActivity({ act: 'share', id: item.id })
     } catch (error) {
       if (!(error instanceof DOMException && error.name === 'AbortError')) {
         setShareFeedback('링크를 공유할 수 없어')
@@ -103,7 +105,10 @@ export const FeedCard = ({ item, cover, preview, onPlay }: FeedCardProps) => {
       <div className="feed-card-rail">
         <button
           type="button"
-          onClick={() => setLiked(!liked)}
+          onClick={() => {
+            setLiked(!liked)
+            if (!liked) recordHomeActivity({ act: 'like', id: item.id })
+          }}
           aria-pressed={liked}
           aria-label={'좋아요 ' + likes}
         >

@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useNavigate, useRouter, useSearch } from '@tanstack/react-router'
+import { browseSeconds, tickBrowse, touchFeed } from '../prototype-tabs/home-activity'
 import { FeedCard } from './FeedCard'
 import { FeedFrame } from './FeedFrame'
 import { FeedPlayer } from './FeedPlayer'
@@ -16,11 +17,11 @@ const lists = {
 }
 
 const FeedClock = ({ running }: { running: boolean }) => {
-  const [seconds, setSeconds] = useState(0)
+  const [seconds, setSeconds] = useState(browseSeconds)
   const ticking = running && seconds < 180
   useEffect(() => {
     if (!ticking) return
-    const timer = window.setInterval(() => setSeconds((n) => Math.min(n + 1, 180)), 1000)
+    const timer = window.setInterval(() => setSeconds(tickBrowse()), 1000)
     return () => window.clearInterval(timer)
   }, [ticking])
   return (
@@ -133,7 +134,12 @@ export const HomeFeedPage = () => {
   }
   const handleClose = () => {
     initialPlay.current = undefined
-    if (openedFromFeed.current === play && router.history.canGoBack()) router.history.back()
+    if (
+      (openedFromFeed.current === play ||
+        router.history.location.state.fromPrototypePlayer === true) &&
+      router.history.canGoBack()
+    )
+      router.history.back()
     else
       void navigate({
         to: '/',
@@ -144,7 +150,7 @@ export const HomeFeedPage = () => {
   }
 
   return (
-    <main className="home-feed">
+    <main className="home-feed" onPointerDownCapture={touchFeed} onWheelCapture={touchFeed}>
       <h1 className="sr-only">홈 피드</h1>
       <header className="home-feed-header">
         <button
@@ -161,7 +167,7 @@ export const HomeFeedPage = () => {
         >
           팔로잉
         </button>
-        <FeedClock running={visible && !player} />
+        <FeedClock running={visible} />
         <details className="feed-notifications">
           <summary aria-label="알림">
             <svg
@@ -186,6 +192,7 @@ export const HomeFeedPage = () => {
         role="region"
         tabIndex={0}
         ref={scroll}
+        onScroll={touchFeed}
       >
         {cards.map((item, index) => (
           <article

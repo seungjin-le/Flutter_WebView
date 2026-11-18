@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { recordHomeActivity } from '../prototype-tabs/home-activity'
 import { FeedFrame } from './FeedFrame'
 import type { FeedItem } from './feed-catalog'
 
@@ -47,7 +48,10 @@ export const FeedPlayer = ({
         item={item}
         active={visible && !showShare}
         interactive
-        onShare={() => setShowShare(true)}
+        onShare={() => {
+          setShowShare(true)
+          recordHomeActivity({ act: 'share', id: item.id })
+        }}
       />
       {showShare && (
         <section className="feed-player-share" aria-label="콘텐츠 공유">

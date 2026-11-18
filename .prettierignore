@@ -11,3 +11,4 @@ pnpm-lock.yaml
 # Self-contained content documents and their original shared runtime.
 apps/web/public/feed/*.html
 apps/web/public/feed/sdk-*.min.js
+apps/web/public/prototype-tabs/index.html

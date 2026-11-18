@@ -1,5 +1,11 @@
 import { expect, test } from '@playwright/test'
 
+const tabHeading = (page: import('@playwright/test').Page, label: string) =>
+  (label === '홈 피드'
+    ? page.getByRole('main')
+    : page.frameLocator('iframe[src="/prototype-tabs/index.html"]')
+  ).getByRole('heading', { level: 1, name: label, exact: true })
+
 test('bottom navigation opens each destination and keeps creation unavailable', async ({
   page,
 }) => {
@@ -155,13 +161,11 @@ test('opens and reloads each page directly with its corresponding navigation lin
     const current = page.getByRole('link', { name: label })
     await expect(current).toHaveAttribute('href', path)
     await expect(current).toHaveAttribute('aria-current', 'page')
-    await expect(page.getByRole('heading', { level: 1, name: title, exact: true })).toBeVisible()
+    await expect(tabHeading(page, title)).toBeVisible()
     await page.reload()
     await expect(page).toHaveURL(url)
     await expect(current).toHaveAttribute('aria-current', 'page')
-    await expect(
-      page.getByRole('main').getByRole('heading', { name: title, exact: true }),
-    ).toBeVisible()
+    await expect(tabHeading(page, title)).toBeVisible()
   }
 })
 
@@ -171,14 +175,14 @@ test('tab history follows back and forward and skips reselecting the current pag
   await page.goto('/')
   for (const label of ['탐색', '혜택', '프로필', '프로필']) {
     await page.getByRole('link', { name: label }).click()
-    await expect(page.getByRole('heading', { name: label, exact: true })).toBeVisible()
+    await expect(tabHeading(page, label)).toBeVisible()
   }
   await page.goBack()
   await expect(page).toHaveURL('/benefits')
   await expect(page.locator('a[aria-current="page"]')).toHaveText('혜택')
   await page.goForward()
   await expect(page).toHaveURL('/profile')
-  await expect(page.getByRole('heading', { name: '프로필', exact: true })).toBeVisible()
+  await expect(tabHeading(page, '프로필')).toBeVisible()
 })
 
 test('existing native fixture entry URLs still render the connection demo', async ({ page }) => {

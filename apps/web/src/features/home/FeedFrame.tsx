@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { recordHomeActivity, touchFeed } from '../prototype-tabs/home-activity'
 import type { FeedItem } from './feed-catalog'
 
 type FeedFrameProps = {
@@ -11,6 +12,7 @@ type FeedFrameProps = {
 export const FeedFrame = ({ item, active, interactive = false, onShare }: FeedFrameProps) => {
   // Hooks
   const frame = useRef<HTMLIFrameElement>(null)
+  const recordedResult = useRef(false)
   const [status, setStatus] = useState<'loading' | 'ready' | 'failed'>('loading')
   const [attempt, setAttempt] = useState(0)
 
@@ -22,11 +24,20 @@ export const FeedFrame = ({ item, active, interactive = false, onShare }: FeedFr
       const message = event.data
       if (message?.__lb !== 1 || message.proto !== 1) return
       if (message.type === 'ready') setStatus('ready')
-      if (message.type === 'share' && interactive) onShare?.()
+      if (!interactive || !active || document.hidden || status !== 'ready') return
+      if (message.type === 'interact') touchFeed()
+      if (message.type === 'share') onShare?.()
+      if (message.type === 'result' && !recordedResult.current) {
+        const resultId: unknown = message.payload?.resultId
+        if (typeof resultId !== 'string' || !resultId.trim() || resultId.length > 256) return
+        recordedResult.current = true
+        touchFeed()
+        recordHomeActivity({ act: 'result', id: item.id, resultId })
+      }
     }
     window.addEventListener('message', receive)
     return () => window.removeEventListener('message', receive)
-  }, [interactive, onShare])
+  }, [active, interactive, item.id, onShare, status])
 
   useEffect(() => {
     if (status !== 'ready') return

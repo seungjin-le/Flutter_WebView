@@ -23,7 +23,7 @@ test('shows the illustrated cover then snaps to a live iframe while the navigati
   await expect(cards.nth(4)).toHaveAttribute('data-active', 'true')
   await expect(cards.nth(1).locator('iframe')).toHaveCount(0)
   await page.getByRole('link', { name: '탐색' }).click()
-  await expect(page.locator('iframe')).toHaveCount(0)
+  await expect(page.locator('iframe[src^="/feed/"]')).toHaveCount(0)
 })
 
 test('opens a playable document and returns to the same feed card', async ({ page }) => {

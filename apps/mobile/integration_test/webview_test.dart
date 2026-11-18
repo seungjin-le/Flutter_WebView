@@ -79,10 +79,64 @@ void main() {
     });
   }
 
+  testWidgets('home feed snaps to a ready iframe and keeps navigation fixed', (
+    tester,
+  ) async {
+    final controller = await start(tester, '/');
+    await ready(tester, controller);
+
+    Future<bool> matches(String condition) async {
+      final result = await controller.runJavaScriptReturningResult(condition);
+      return result == true || result == 'true';
+    }
+
+    const feed = 'document.querySelector(".home-feed-scroll")';
+    const cards = '$feed.querySelectorAll("article")';
+    const nav = 'document.querySelector(".bottom-nav")';
+    expect(
+      await matches('Boolean($feed && $cards.length >= 2 && $nav)'),
+      isTrue,
+      reason: 'Home must render a scrollable feed with at least two cards',
+    );
+    await waitUntil(
+      tester,
+      () => matches(
+        '$cards[0].dataset.active === "true" && !$cards[0].querySelector("iframe") && '
+        '$cards[1].dataset.active === "false" && '
+        '''Boolean($cards[1].querySelector('iframe[src^="/feed/"][src\$=".html"]'))''',
+      ),
+    );
+    final initialNavTop = await controller.runJavaScriptReturningResult(
+      '$nav.getBoundingClientRect().top',
+    );
+    await controller.runJavaScript('$feed.scrollTop = $feed.clientHeight');
+    await waitUntil(
+      tester,
+      () => matches(
+        '$cards[1].dataset.active === "true" && '
+        'Boolean($cards[1].querySelector("iframe[data-ready=true]")) && '
+        'Math.abs($feed.scrollTop - $feed.clientHeight) <= 1',
+      ),
+    );
+    expect(
+      await controller.runJavaScriptReturningResult(
+        '$nav.getBoundingClientRect().top',
+      ),
+      initialNavTop,
+    );
+    await controller.runJavaScript('$feed.scrollTop = 0');
+    await waitUntil(
+      tester,
+      () => matches(
+        '$cards[0].dataset.active === "true" && $feed.scrollTop === 0',
+      ),
+    );
+  });
+
   testWidgets(
     'real WebView renders React, exchanges pong, reloads, navigates and preserves counter',
     (tester) async {
-      final controller = await start(tester, '/');
+      final controller = await start(tester, '/connection');
       await ready(tester, controller);
       await ping(tester, controller);
       // Browser back intentionally skips script-created history without a user gesture.
@@ -114,7 +168,8 @@ void main() {
       }
       await waitUntil(
         tester,
-        () async => (await controller.currentUrl())?.endsWith('/') == true,
+        () async =>
+            (await controller.currentUrl())?.endsWith('/connection') == true,
       );
       await tester.pump(const Duration(seconds: 1));
       expect(find.byType(LinearProgressIndicator), findsNothing);
@@ -146,7 +201,8 @@ void main() {
       }
       await waitUntil(
         tester,
-        () async => (await controller.currentUrl())?.endsWith('/') == true,
+        () async =>
+            (await controller.currentUrl())?.endsWith('/connection') == true,
       );
       await ready(tester, controller);
       await ping(tester, controller);
@@ -164,7 +220,8 @@ void main() {
         await tester.binding.handlePopRoute();
         await waitUntil(
           tester,
-          () async => (await controller.currentUrl())?.endsWith('/') == true,
+          () async =>
+              (await controller.currentUrl())?.endsWith('/connection') == true,
         );
         await ready(tester, controller);
         await ping(tester, controller);

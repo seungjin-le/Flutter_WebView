@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 
 test('browser mode is accessible and does not claim a native connection', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/connection')
   await expect(page.getByRole('heading', { name: 'Luckieverse' })).toBeVisible()
   await expect(page.getByRole('button', { name: '앱 연결 확인' })).toBeDisabled()
   await expect(page.getByRole('status')).toContainText('브라우저')
@@ -18,7 +18,7 @@ test('native bridge mock replies, survives reload and supports repeated checks',
       }))
     } }
   })
-  await page.goto('/')
+  await page.goto('/connection')
   for (let i = 0; i < 2; i++) {
     await page.getByRole('button', { name: '앱 연결 확인' }).click()
     await expect(page.getByRole('status')).toContainText('iOS 앱과 연결됐어')
@@ -32,7 +32,7 @@ test('native bridge mock replies, survives reload and supports repeated checks',
 test('a silent native transport times out and can be retried', async ({ page }) => {
   await page.addInitScript(() => { window.LuckieverseBridge = { postMessage() {} } })
   await page.clock.install()
-  await page.goto('/')
+  await page.goto('/connection')
   await page.getByRole('button', { name: '앱 연결 확인' }).click()
   await expect(page.getByRole('button', { name: '확인 중' })).toBeDisabled()
   await page.clock.fastForward(5100)
@@ -42,7 +42,7 @@ test('a silent native transport times out and can be retried', async ({ page }) 
 
 // Preflight resets the old design while app-local utilities remain available.
 test('shared Tailwind tokens, reset and app-local responsive utilities work', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/connection')
   await expect(page.locator('body')).toHaveCSS('margin', '0px')
   await expect(page.getByRole('heading', { level: 1 })).toHaveCSS('font-size', '16px')
   await expect(page.getByRole('heading', { level: 1 })).toHaveCSS('font-weight', '400')

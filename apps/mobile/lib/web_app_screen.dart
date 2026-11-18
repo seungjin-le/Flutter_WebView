@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 
 import 'fold_state.dart';
 import 'native_bridge.dart';
@@ -77,6 +78,11 @@ class WebAppScreenState extends State<WebAppScreen> {
       _controller = controller;
       await controller.setJavaScriptMode(JavaScriptMode.unrestricted);
       if (!_isCurrent(controller)) return;
+      final platform = controller.platform;
+      if (platform is WebKitWebViewController) {
+        await platform.setAllowsBackForwardNavigationGestures(true);
+        if (!_isCurrent(controller)) return;
+      }
       await controller.setNavigationDelegate(
         NavigationDelegate(
           onPageStarted: (url) => _started(controller, url),

@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:webview_flutter_platform_interface/webview_flutter_platform_interface.dart';
+import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 import 'package:luckieverse_tab_flutter/main.dart';
 
 import 'fake_webview.dart';
@@ -163,6 +164,36 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
   }
+
+  testWidgets('enables native history gestures on each WebKit controller', (
+    tester,
+  ) async {
+    final webKit = _FakeWebKitPlatform();
+    WebViewPlatform.instance = webKit;
+    await start(tester);
+    final first = webKit.controller;
+    expect(
+      first.operations,
+      containsAllInOrder(['historyGestures:true', 'load']),
+    );
+
+    webKit.delegate.failed?.call(
+      WebResourceError(
+        errorCode: -2,
+        description: 'network',
+        isForMainFrame: true,
+      ),
+    );
+    await tester.pump();
+    await tester.tap(find.text('다시 시도'));
+    await tester.pump();
+    expect(webKit.controller, isNot(same(first)));
+    expect(
+      webKit.controller.operations,
+      containsAllInOrder(['historyGestures:true', 'load']),
+    );
+    await tester.pumpWidget(const SizedBox());
+  });
 
   testWidgets('registers channel before loading and hides progress on finish', (
     tester,
@@ -552,4 +583,24 @@ void main() {
     expect(find.text('다시 시도'), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
   });
+}
+
+class _FakeWebKitPlatform extends FakeWebViewPlatform {
+  @override
+  PlatformWebViewController createPlatformWebViewController(
+    PlatformWebViewControllerCreationParams params,
+  ) => controller = _FakeWebKitController(params);
+}
+
+class _FakeWebKitController extends FakeController
+    implements WebKitWebViewController {
+  _FakeWebKitController(super.params);
+
+  @override
+  Future<void> setAllowsBackForwardNavigationGestures(bool enabled) async {
+    operations.add('historyGestures:$enabled');
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

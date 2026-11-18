@@ -13,7 +13,9 @@ import 'package:luckieverse_tab_flutter/main.dart';
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp(initialRoute: '/counter'));
+    await tester.pumpWidget(
+      const MyApp(webAppUrl: '', initialRoute: '/counter'),
+    );
 
     // Verify that our counter starts at 0.
     expect(find.text('0'), findsOneWidget);
@@ -30,7 +32,9 @@ void main() {
 
   testWidgets('Meets accessibility guidelines', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp(initialRoute: '/counter'));
+    await tester.pumpWidget(
+      const MyApp(webAppUrl: '', initialRoute: '/counter'),
+    );
 
     // Checks that tappable nodes have a minimum size of 48 by 48 pixels
     // for Android.

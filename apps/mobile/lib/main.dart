@@ -12,7 +12,10 @@ Future<void> main() async {
 class MyApp extends StatelessWidget {
   const MyApp({
     super.key,
-    this.webAppUrl = const String.fromEnvironment('WEB_APP_URL'),
+    this.webAppUrl = const String.fromEnvironment(
+      'WEB_APP_URL',
+      defaultValue: 'https://flutter-web-view.vercel.app/',
+    ),
     this.initialRoute = '/',
   });
 

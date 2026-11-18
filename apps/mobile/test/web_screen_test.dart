@@ -30,6 +30,10 @@ void main() {
     await tester.pump();
   }
 
+  test('defaults to the deployed web app when WEB_APP_URL is not set', () {
+    expect(const MyApp().webAppUrl, 'https://flutter-web-view.vercel.app/');
+  });
+
   testWidgets(
     'missing URL shows a configuration error and preserves counter demo',
     (tester) async {

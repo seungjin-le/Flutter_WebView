@@ -2,7 +2,7 @@
 
 이 문서는 React와 Flutter가 공유하는 계약이다. 인증·권한·파일 접근 기능은 없다.
 
-- 앱 URL: `--dart-define=WEB_APP_URL=https://...`. 운영에서는 HTTPS, debug에서는 로컬 개발용 HTTP도 허용한다. URL에 사용자 정보는 허용하지 않는다.
+- 앱 URL: 기본값은 `https://flutter-web-view.vercel.app/`이고, `--dart-define=WEB_APP_URL=https://...`로 덮어쓴다. 운영에서는 HTTPS, debug에서는 로컬 개발용 HTTP도 허용한다. URL에 사용자 정보는 허용하지 않는다.
 - 허용 탐색: 설정 URL과 동일한 scheme/host/port. 다른 origin, `file:`, `javascript:`, 외부 앱 스킴은 차단한다.
 - React 공개 함수: `pingNative(): Promise<Pong>`. 채널이 없는 브라우저에서는 호출을 거부한다.
 - JavaScript → Dart: `window.LuckieverseBridge.postMessage(JSON.stringify({version: 1, id, type: 'ping'}))`.

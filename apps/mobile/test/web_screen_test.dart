@@ -39,6 +39,7 @@ void main() {
     (tester) async {
       await tester.pumpWidget(const MyApp(webAppUrl: ''));
       expect(find.text('웹 주소가 설정되지 않았어'), findsOneWidget);
+      expect(find.byType(Image), findsNothing);
       await tester.tap(find.text('카운터 데모'));
       await tester.pumpAndSettle();
       expect(find.text('0'), findsOneWidget);
@@ -47,6 +48,122 @@ void main() {
       expect(find.text('1'), findsOneWidget);
     },
   );
+
+  const splashLabel = 'Luckieverse 불러오는 중';
+  Future<void> finishLoad(WidgetTester tester) async {
+    platform.delegate.finished?.call('https://example.com');
+    await tester.pump();
+  }
+
+  testWidgets('splash with logo covers the UI until the first page finishes', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    await start(tester);
+    expect(find.bySemanticsLabel(splashLabel), findsOneWidget);
+    expect(find.byType(Image), findsOneWidget);
+    expect(find.byType(LinearProgressIndicator), findsOneWidget);
+    await tester.tap(find.text('카운터 데모'), warnIfMissed: false);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.text('0'), findsNothing);
+    await tester.pumpWidget(const SizedBox());
+    semantics.dispose();
+  });
+  testWidgets('splash is removed after the first page finishes', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    await start(tester);
+    await finishLoad(tester);
+    expect(find.bySemanticsLabel(splashLabel), findsNothing);
+    expect(find.byType(Image), findsNothing);
+    expect(find.byKey(const Key('fake-webview')), findsOneWidget);
+    await tester.tap(find.text('카운터 데모'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.text('0'), findsOneWidget);
+    semantics.dispose();
+  });
+  final failures = <String, void Function()>{
+    'main frame error': () => platform.delegate.failed?.call(
+      WebResourceError(
+        errorCode: -2,
+        description: 'network',
+        isForMainFrame: true,
+      ),
+    ),
+    'HTTP error': () => platform.delegate.httpFailed?.call(
+      HttpResponseError(
+        request: WebResourceRequest(uri: Uri.parse('https://example.com')),
+        response: const WebResourceResponse(uri: null, statusCode: 503),
+      ),
+    ),
+  };
+  failures.forEach((name, fail) {
+    testWidgets('splash gives way to the error screen on $name', (
+      tester,
+    ) async {
+      await start(tester);
+      fail();
+      await tester.pump();
+      expect(find.byType(Image), findsNothing);
+      expect(find.text('다시 시도'), findsOneWidget);
+    });
+  });
+  testWidgets('splash gives way to the error screen on timeout', (
+    tester,
+  ) async {
+    await start(tester);
+    await tester.pump(const Duration(seconds: 31));
+    expect(find.byType(Image), findsNothing);
+    expect(find.textContaining('시간'), findsOneWidget);
+    expect(find.text('다시 시도'), findsOneWidget);
+  });
+  testWidgets('splash never returns for later navigations or retries', (
+    tester,
+  ) async {
+    await start(tester);
+    await finishLoad(tester);
+    platform.delegate.started?.call('https://example.com/next');
+    await tester.pump();
+    expect(find.byType(LinearProgressIndicator), findsOneWidget);
+    expect(find.byType(Image), findsNothing);
+    await tester.pump(const Duration(seconds: 31));
+    await tester.tap(find.text('다시 시도'));
+    await tester.pump();
+    expect(find.byType(LinearProgressIndicator), findsOneWidget);
+    expect(find.byType(Image), findsNothing);
+    await tester.pumpWidget(const SizedBox());
+  });
+  for (final (target, brightness, color) in [
+    (TargetPlatform.android, Brightness.dark, Colors.black),
+    (TargetPlatform.android, Brightness.light, Colors.white),
+    (TargetPlatform.iOS, Brightness.dark, Colors.white),
+  ]) {
+    testWidgets('splash background on $target in $brightness is $color', (
+      tester,
+    ) async {
+      debugDefaultTargetPlatformOverride = target;
+      tester.platformDispatcher.platformBrightnessTestValue = brightness;
+      addTearDown(() {
+        debugDefaultTargetPlatformOverride = null;
+        tester.platformDispatcher.clearPlatformBrightnessTestValue();
+      });
+      await start(tester);
+      final box = tester
+          .widgetList<ColoredBox>(
+            find.ancestor(
+              of: find.byType(Image),
+              matching: find.byType(ColoredBox),
+            ),
+          )
+          .first;
+      expect(box.color, color);
+      await tester.pumpWidget(const SizedBox());
+    });
+  }
+
   testWidgets('registers channel before loading and hides progress on finish', (
     tester,
   ) async {

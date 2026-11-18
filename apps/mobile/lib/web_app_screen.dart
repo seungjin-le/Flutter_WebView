@@ -24,6 +24,7 @@ class WebAppScreenState extends State<WebAppScreen> {
   String? _error;
   String? _documentUrl;
   bool _loading = true;
+  bool _splash = true;
   bool _configured = false;
   int _generation = 0;
   late FoldState _foldState;
@@ -171,7 +172,10 @@ class WebAppScreenState extends State<WebAppScreen> {
         return;
       }
       _timer?.cancel();
-      setState(() => _loading = false);
+      setState(() {
+        _loading = false;
+        _splash = false;
+      });
     } catch (_) {
       if (_isCurrent(controller) && generation == _generation) {
         _fail('웹 화면 상태를 확인하지 못했어. 다시 시도해 줘.');
@@ -188,6 +192,7 @@ class WebAppScreenState extends State<WebAppScreen> {
     setState(() {
       _error = message;
       _loading = false;
+      _splash = false;
     });
   }
 
@@ -341,70 +346,108 @@ class WebAppScreenState extends State<WebAppScreen> {
   Widget build(BuildContext context) {
     final controller = _controller;
     final error = _error;
+    final showSplash = _splash && _base != null;
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop) unawaited(_back());
       },
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Luckieverse'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pushNamed('/counter'),
-              child: const Text('카운터 데모'),
-            ),
-          ],
-        ),
-        body: SafeArea(
-          child: _base == null
-              ? const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text('웹 주소가 설정되지 않았어'),
-                        SizedBox(height: 12),
-                        Text(
-                          '올바른 WEB_APP_URL로 앱을 실행해 줘.',
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          ExcludeSemantics(
+            excluding: showSplash,
+            child: Scaffold(
+              appBar: AppBar(
+                title: const Text('Luckieverse'),
+                actions: [
+                  TextButton(
+                    onPressed: () =>
+                        Navigator.of(context).pushNamed('/counter'),
+                    child: const Text('카운터 데모'),
                   ),
-                )
-              : error != null
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(error, textAlign: TextAlign.center),
-                        const SizedBox(height: 16),
-                        FilledButton(
-                          onPressed: () {
-                            unawaited(_initialize());
-                          },
-                          child: const Text('다시 시도'),
+                ],
+              ),
+              body: SafeArea(
+                child: _base == null
+                    ? const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(24),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text('웹 주소가 설정되지 않았어'),
+                              SizedBox(height: 12),
+                              Text(
+                                '올바른 WEB_APP_URL로 앱을 실행해 줘.',
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
                         ),
-                      ],
-                    ),
-                  ),
-                )
-              : Column(
-                  children: [
-                    if (_loading) const LinearProgressIndicator(),
-                    if (controller != null && _configured)
-                      Expanded(
-                        child: WebViewWidget(
-                          key: ObjectKey(controller),
-                          controller: controller,
+                      )
+                    : error != null
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(error, textAlign: TextAlign.center),
+                              const SizedBox(height: 16),
+                              FilledButton(
+                                onPressed: () {
+                                  unawaited(_initialize());
+                                },
+                                child: const Text('다시 시도'),
+                              ),
+                            ],
+                          ),
                         ),
+                      )
+                    : Column(
+                        children: [
+                          if (_loading) const LinearProgressIndicator(),
+                          if (controller != null && _configured)
+                            Expanded(
+                              child: WebViewWidget(
+                                key: ObjectKey(controller),
+                                controller: controller,
+                              ),
+                            ),
+                        ],
                       ),
-                  ],
-                ),
+              ),
+            ),
+          ),
+          if (showSplash) const _Splash(),
+        ],
+      ),
+    );
+  }
+}
+
+// Mirrors the native splash (res/values-night-v31, drawable-v21): black only on dark Android.
+class _Splash extends StatelessWidget {
+  const _Splash();
+  @override
+  Widget build(BuildContext context) {
+    final dark =
+        MediaQuery.platformBrightnessOf(context) == Brightness.dark &&
+        defaultTargetPlatform == TargetPlatform.android;
+    return Semantics(
+      label: 'Luckieverse 불러오는 중',
+      child: AbsorbPointer(
+        child: ColoredBox(
+          color: dark ? Colors.black : Colors.white,
+          child: Center(
+            child: Image.asset(
+              'assets/splash_logo.png',
+              width: 96,
+              height: 96,
+              excludeFromSemantics: true,
+            ),
+          ),
         ),
       ),
     );

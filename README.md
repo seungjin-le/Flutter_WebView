@@ -58,6 +58,28 @@ pnpm mobile:run -d <device-id> --dart-define=WEB_APP_URL=http://<개발컴퓨터
 
 HTTP는 debug 빌드의 localhost·사설 IP에서만 허용해. profile/release는 HTTPS가 필요해. URL 미설정·오류 시 설정 안내가 표시돼. iOS에서 요청하면 로컬 네트워크 접근을 허용해야 해.
 
+## Flutter 소셜 로그인 설정
+
+카카오·네이버·구글·애플의 Android/iOS SDK와 콜백은 `apps/mobile`에 설정돼 있어. 키를 비워도 기본 앱을 실행할 수 있어. 발급받은 값을 적용할 때는 모바일 디렉터리에서 다음과 같이 실행해.
+
+```sh
+cd apps/mobile
+cp -n social-login.env.example .env.local
+# .env.local에 필요한 제공자 값만 입력한 뒤 앱을 다시 빌드해.
+flutter run --dart-define-from-file=.env.local
+```
+
+Android와 Xcode도 같은 `.env.local`을 읽어. `flutter build`에도 같은 옵션을 붙여. 이 파일은 Git에서 제외돼. 앱에 포함되는 클라이언트 설정만 넣고, Apple 서명용 개인 키나 서버용 OAuth 시크릿은 서버에서 관리해.
+
+| 제공자 | 입력할 값 | 제공자 콘솔과 앱에서 맞출 설정 |
+| --- | --- | --- |
+| 카카오 | `KAKAO_NATIVE_APP_KEY` | 카카오 로그인 활성화, Android 패키지·서명 키 해시와 iOS 번들 ID 등록. 앱의 복귀 주소는 `kakao{네이티브 앱 키}://oauth`야. |
+| 네이버 | `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET` | 네이버 로그인 환경에 Android 패키지와 iOS URL 스킴 `luckieverse-naver`를 등록해. |
+| 구글 | `GOOGLE_WEB_CLIENT_ID`, `GOOGLE_IOS_CLIENT_ID`, `GOOGLE_IOS_REVERSED_CLIENT_ID` | Android OAuth 클라이언트에는 패키지와 서명 SHA-1을 등록해. Android SDK가 사용하는 서버 클라이언트 ID는 웹 유형이야. iOS 값은 해당 번들용 클라이언트의 `CLIENT_ID`와 `REVERSED_CLIENT_ID`야. 로그인 호출 전 `GoogleSignIn.instance.initialize()`를 한 번 호출해. |
+| 애플 | iOS는 앱 키 불필요. Android는 `APPLE_SERVICE_ID`, `APPLE_RETURN_URL` | iOS App ID와 서명 프로파일에 Sign in with Apple을 활성화해. Android는 Services ID에 HTTPS Return URL을 등록하고, 해당 서버가 Apple의 POST를 받아 앱의 패키지를 지정한 `intent://callback?...#Intent;package=com.example.luckieverse_tab_flutter;scheme=signinwithapple;end`로 복귀시켜야 해. Dart에서 Android용 인증 옵션은 `appleWebOptions()`로 얻을 수 있어. |
+
+현재 Android 패키지는 `com.example.luckieverse_tab_flutter`, iOS 번들 ID는 `com.example.luckieverseTabFlutter`야. 로그인 화면과 서버 세션 발급은 후속 연동 범위야.
+
 ## 웹 배포와 앱 빌드
 
 ```sh

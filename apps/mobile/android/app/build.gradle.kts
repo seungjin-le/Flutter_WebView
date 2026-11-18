@@ -1,10 +1,20 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+val socialLogin = Properties().apply {
+    val settings = rootProject.file("../.env.local")
+    if (settings.isFile) settings.reader(Charsets.UTF_8).use { load(it) }
+}
+val kakaoKey = socialLogin.getProperty("KAKAO_NATIVE_APP_KEY", "").trim()
+
 android {
+    buildFeatures { resValues = true }
+
     namespace = "com.example.luckieverse_tab_flutter"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
@@ -27,6 +37,12 @@ android {
         // flag during build.
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        manifestPlaceholders["kakaoCallbackEnabled"] = kakaoKey.isNotEmpty().toString()
+        manifestPlaceholders["kakaoScheme"] = "kakao${kakaoKey.ifEmpty { "unconfigured.luckieverse" }}"
+        resValue("string", "naver_client_id", socialLogin.getProperty("NAVER_CLIENT_ID", ""))
+        resValue("string", "naver_client_secret", socialLogin.getProperty("NAVER_CLIENT_SECRET", ""))
+        resValue("string", "default_web_client_id", socialLogin.getProperty("GOOGLE_WEB_CLIENT_ID", ""))
     }
 
     buildTypes {
